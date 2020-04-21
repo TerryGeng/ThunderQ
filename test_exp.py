@@ -1,3 +1,4 @@
+import path_to_devices
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -86,10 +87,11 @@ class TestExperiment(Experiment):
     @run_wrapper
     def run(self):
         print("Experiment running...")
-        for probe_freq in np.linspace(self.center_probe_freq - 0.1e9, self.center_probe_freq + 0.1e9, 20):
+        for probe_freq in np.linspace(self.center_probe_freq - 0.01e9, self.center_probe_freq + 0.01e9, 100):
             self.update_status(f"Probe at {(probe_freq/1e9):5f} GHz")
             self.probe_freq = probe_freq
-            self.single_shot_run()
+            self.pre_run()
+            self.post_run()
 
     def get_amp_phase(self, freq, data, sample_rate=1e9):
         data_length = len(data)
