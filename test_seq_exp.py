@@ -7,6 +7,7 @@ from thunderq.helper.sequence import Sequence
 from thunderq.driver.AWG import AWGChannel, AWG_M3202A
 from thunderq.driver.ASG import ASG_E8257C
 from thunderq.driver.acqusition import Acquisition_ATS9870
+from thunderq.driver.trigger import TriggerDG645
 from thunderq.procedure import IQModProbe
 from thunder_board import senders
 
@@ -44,7 +45,7 @@ class TestExperiment(Experiment):
         self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")
 
     def initialize_sequence(self):
-        self.sequence = Sequence(DG645.DEVICE(), 5000)
+        self.sequence = Sequence(TriggerDG645(), 5000)
         self.sequence.add_slice("drive_mod", trigger_line="T0", start_from=0, duration=100e-6)
 
         self.sequence.add_slice("probe_mod", trigger_line="AB", start_from=100e-6, duration=4e-6) \
