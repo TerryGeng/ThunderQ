@@ -5,7 +5,7 @@ from thunder_board import senders
 class Logger:
     def __init__(self, thunderboard=True):
         if thunderboard:
-            self.log_sender = senders.TextSender("Log", id="status", rotate=True)
+            self.log_sender = senders.TextSender("Log", id="log", rotate=True)
         else:
             self.log_sender = None
 

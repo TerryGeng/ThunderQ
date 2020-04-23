@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.figure as Figure
+from matplotlib.figure import Figure
 
 import thunderq.runtime as runtime
 from thunderq.driver.AWG import AWGChannel, AWG
@@ -106,8 +106,8 @@ class Sequence:
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure()
-        ax = fig.subplots(1, 1, figsize=(8, len(self.slices) * 1))
+        fig = Figure(figsize=(8, len(self.slices) * 1))
+        ax = fig.subplots(1, 1)
 
         fig.tight_layout()
 

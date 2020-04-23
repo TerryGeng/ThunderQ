@@ -99,8 +99,8 @@ class TestExperiment(Experiment):
             self.sequence_sender.send(self.sequence.plot())
             self.sequence_sent = True
 
-        fig = Figure()
-        ax = fig.subplots(1,1, figsize=(5, 3))
+        fig = Figure(figsize=(5, 3))
+        ax = fig.subplots(1,1)
         ax.plot(self.result_freq, self.result_amp, color="b")
         ax.set_xlabel("Probe Frequency / GHz")
         ax.set_ylabel("Amplitude / arb.")
