@@ -48,17 +48,19 @@ class IQModProbe(Procedure):
         self.lo_power = probe_lo_power
 
     def pre_run(self, sequence: Sequence):
-        if not self.prob_freq or not self.mod_amp:
+        if not self.probe_freq or not self.mod_amp:
             raise ValueError("Probe parameters should be set first.")
 
         self.probe_lo_dev.set_frequency_amplitude(self.probe_freq - self.mod_freq, self.mod_amp)
         self.probe_lo_dev.run()
 
-        I_waveform, Q_waveform = self._build_readout_waveform(self.prob_len, self.prob_mod_rel_amp)
+        I_waveform, Q_waveform = self._build_readout_waveform(self.probe_len, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
         mod_slice.add_waveform(self.mod_I_name, I_waveform)
         mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
+        mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
+        mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
 
         self.acquisition_dev.set_acquisition_params(length=self.readout_len,
                                                     repeats=self.repeat,
@@ -107,7 +109,7 @@ class IQModProbe(Procedure):
         # )
         # TODO: Above part is actually not completely correct.
 
-        IQ_waveform = waveform.CalibratedIQ(self.heterodyne_freq,
+        IQ_waveform = waveform.CalibratedIQ(self.mod_freq,
                                             I_waveform=dc_waveform,
                                             carry_cali_matrix=self.mod_IQ_calib_array)
 

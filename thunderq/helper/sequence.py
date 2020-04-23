@@ -1,3 +1,6 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
 import thunderq.runtime as runtime
 from thunderq.driver.AWG import AWGChannel, AWG
 from thunderq.driver.trigger import TriggerDevice
@@ -70,6 +73,10 @@ class Sequence:
         # add_slice("drive", "probe_mod", "AB", 100e-6, 4e-6)
         # add_slice("drive", "probe_src", "CD", 100e-6, 4e-6)
 
+        if start_from + duration > 1 / self.cycle_frequency:
+            raise ValueError(f"Out of range. Your slice ends at {start_from + duration}s, "
+                             f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
+
         self.slices[name] = Sequence.Slice(name, trigger_line, start_from, duration)
 
         return self.slices[name]
@@ -85,3 +92,53 @@ class Sequence:
     def run(self):
         for slice in self.slices.values():
             slice.run_AWG()
+
+    def plot(self):
+        plot_sample_rate = 1e6
+        cycle_length = 1 / self.cycle_frequency
+        sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
+        plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
+
+        fig, (ax) = plt.subplots(1, 1, figsize=(8, len(self.slices) * 1))
+
+        for spine in ["left", "top", "right"]:
+            ax.spines[spine].set_visible(False)
+
+        ax.yaxis.set_visible(False)
+        ax.set_xlim(-plot_sample_points[-1]/10, plot_sample_points[-1])
+        ax.set_xlabel("Time / us")
+        text_x = -plot_sample_points[-1]/30
+
+        colors = ["blue", "darkviolet", "crimson", "orangered", "orange", "forestgreen", "lightseagreen", "dodgerblue"]
+        height = 0
+        i = 0
+
+        for slice in self.slices.values():
+            height += 1.5
+            for channel_name, waveform in slice.AWG_waveforms.items():
+                y = np.zeros(len(sample_points))
+                for t in range(len(sample_points)):
+                    if slice.start_from < sample_points[t] < slice.start_from + slice.duration:
+                        y[t] = waveform.at(sample_points[t] - slice.start_from)
+                    else:
+                        y[t] = 0
+
+                y = (y - y.min()) / (y.max() - y.min()) + height
+                ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
+                ax.annotate(channel_name, xy=(text_x, height + 0.5), fontsize=9, ha="right", va="center", fontstyle="italic")
+                height += 1.5
+                i += 1
+
+            y = np.zeros(len(sample_points))
+            for t in range(len(sample_points)):
+                if slice.start_from < sample_points[t] < slice.start_from + slice.duration:
+                    y[t] = height + 1
+                else:
+                    y[t] = height
+
+            ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
+            ax.annotate(slice.name, xy=(text_x, height + 0.5), fontsize=11, ha="right", va="center")
+            i += 1
+
+        plt.show()
+

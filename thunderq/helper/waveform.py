@@ -208,7 +208,7 @@ class Gaussian(WaveForm):
 
 class CalibratedIQ(WaveForm):
     def __init__(self, carry_freq, I_waveform: WaveForm=None, Q_waveform: WaveForm=None, carry_cali_matrix=None, phase_unit_deg=True):
-        super().__init__(max(I_waveform.width, Q_waveform.width), 1)
+        super().__init__(0, 1)
 
         self.omega = 2*np.pi*carry_freq
 
@@ -221,6 +221,8 @@ class CalibratedIQ(WaveForm):
             raise TypeError("At least one of I waveform and Q waveform should be given.")
         else:
             IQ_waveform = SumWave(I_waveform, Q_waveform * 1j)
+
+        self.width = IQ_waveform.width
 
         self.carry_IQ = IQ_waveform * ComplexExp(self.width, 1, self.omega, 0)
 
@@ -259,7 +261,7 @@ class CalibratedIQ(WaveForm):
 
 
 class Real(WaveForm):
-    def __init__(self, complex_waveform: Waveform):
+    def __init__(self, complex_waveform: WaveForm):
         super().__init__(complex_waveform.width, complex_waveform.amplitude)
         self.complex_waveform = complex_waveform
 
@@ -270,8 +272,8 @@ class Real(WaveForm):
         return self.complex_waveform * other
 
 
-class Imag(Waveform):
-    def __init__(self, complex_waveform: Waveform):
+class Imag(WaveForm):
+    def __init__(self, complex_waveform: WaveForm):
         super().__init__(complex_waveform.width, complex_waveform.amplitude)
         self.complex_waveform = complex_waveform
 

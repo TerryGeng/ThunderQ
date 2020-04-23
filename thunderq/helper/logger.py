@@ -64,7 +64,7 @@ class ExperimentStatus:
         _time = time.strftime("%Y-%m-%d %H:%M:%S")
         self.experiment_stack.append({
             'start_at': _time,
-            'name': name,
+            'name': experiment_name,
             'status': None
         } )
         print(f"[{_time}] *** Enter experiment: {experiment_name} ***")

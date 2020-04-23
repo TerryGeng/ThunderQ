@@ -1,4 +1,3 @@
-import path_to_devices
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,14 +7,8 @@ from thunderq.helper.sequence import Sequence
 from thunderq.driver.AWG import AWGChannel, AWG_M3202A
 from thunderq.driver.ASG import ASG_E8257C
 from thunderq.driver.acqusition import Acquisition_ATS9870
-from thunderq.procedure.probe import IQModProbe
+from thunderq.procedure import IQModProbe
 from thunder_board import senders
-
-
-import DG645
-import E8257C
-import M3202A
-import ATS9870_MOD2 as ATS9870
 
 
 class TestExperiment(Experiment):
@@ -39,6 +32,7 @@ class TestExperiment(Experiment):
             acquisition_slice_name="probe_lo",
             acquisition_dev=Acquisition_ATS9870()
         )
+
         self.probe_procedure.repeat = 200
 
         self.add_procedure(self.probe_procedure)
@@ -47,6 +41,7 @@ class TestExperiment(Experiment):
         self.result_amp = []
 
         self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
+        self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")
 
     def initialize_sequence(self):
         self.sequence = Sequence(DG645.DEVICE(), 5000)
@@ -67,6 +62,7 @@ class TestExperiment(Experiment):
             self.probe_procedure.set_probe_params(probe_freq, self.probe_mod_amp, self.probe_power)
 
             self.run_single_shot()
+            self.sequence_sender.send(self.sequence.plot())
 
             result_amp, result_phase = self.probe_procedure.last_result()
 

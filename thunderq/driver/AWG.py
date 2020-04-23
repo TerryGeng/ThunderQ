@@ -4,7 +4,7 @@ from ..helper.waveform import WaveForm, CalibratedIQ
 
 import path_to_devices
 from keysightSD1 import SD_AOU, SD_Wave, SD_Waveshapes, SD_TriggerExternalSources, SD_TriggerBehaviors, \
-    SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
+   SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
 
 
 ## Arbitary Waveform Generator

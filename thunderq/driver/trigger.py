@@ -1,3 +1,4 @@
+import path_to_devices
 import DG645 # importing Orkesh's device interface
 
 class TriggerDevice:
