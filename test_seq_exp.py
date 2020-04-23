@@ -72,10 +72,12 @@ class TestExperiment(Experiment):
             self.result_amp.append(result_amp)
             self.result_phase.append(result_phase)
 
-            plt.plot(self.result_freq, self.result_amp, color="b")
-            plt.xlabel("Probe Frequency / GHz")
-            plt.ylabel("Amplitude / arb.")
-            self.plot_sender.send(plt)
+            fig, ax = plt.subplots(111)
+            ax.plot(self.result_freq, self.result_amp, color="b")
+            ax.xlabel("Probe Frequency / GHz")
+            ax.ylabel("Amplitude / arb.")
+            fig.tight_layout()
+            self.plot_sender.send(fig)
             plt.close()
 
     def get_amp_phase(self, freq, data, sample_rate=1e9):
