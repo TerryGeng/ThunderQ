@@ -1,7 +1,7 @@
 import time
 import threading
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 from thunderq.experiment import Experiment, run_wrapper
 from thunderq.helper.sequence import Sequence
@@ -97,16 +97,15 @@ class TestExperiment(Experiment):
     def make_plot_and_send(self):
         if not self.sequence_sent:
             self.sequence_sender.send(self.sequence.plot())
-            plt.close()
             self.sequence_sent = True
 
-        fig, ax = plt.subplots(1,1, figsize=(5, 3))
+        fig = Figure()
+        ax = fig.subplots(1,1, figsize=(5, 3))
         ax.plot(self.result_freq, self.result_amp, color="b")
         ax.set_xlabel("Probe Frequency / GHz")
         ax.set_ylabel("Amplitude / arb.")
         fig.tight_layout()
         self.plot_sender.send(fig)
-        plt.close()
 
     def get_amp_phase(self, freq, data, sample_rate=1e9):
         data_length = len(data)
