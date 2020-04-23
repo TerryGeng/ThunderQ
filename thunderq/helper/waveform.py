@@ -19,8 +19,16 @@ class WaveForm:
     def at(self, time):
         raise NotImplementedError
 
-    def sample(self, sample_rate):
-        return RawWaveForm(self, sample_rate)
+    def sample(self, sample_rate, min_unit=16):
+        sample_points = np.arange(0, self.width, 1.0 / sample_rate)
+        padding = []
+        if len(sample_points) % min_unit != 0:
+            padding_len = min_unit - (len(sample_points) % min_unit)
+            padding = [0] * padding_len
+
+        data = np.array([self.at(sample_point) for sample_point in sample_points] + padding)
+
+        return data
 
     def concat(self, waveform):
         return Sequence(self, waveform)
@@ -45,17 +53,6 @@ class WaveForm:
         else:
             self.amplitude = self.amplitude * other
         return self
-
-
-class RawWaveForm:
-    def __init__(self, waveform, sample_rate):
-        if isinstance(waveform, WaveForm):
-            self.sample_points = np.arange(0, waveform.width, 1.0 / sample_rate)
-            self.data = np.array([ waveform.at(sample_point) for sample_point in self.sample_points ])
-        else:
-            self.data = waveform
-
-        self.sample_rate = sample_rate
 
 
 class SumWave(WaveForm):
@@ -259,3 +256,27 @@ class CalibratedIQ(WaveForm):
 
     def __mul__(self, other):
         raise TypeError("It's unwise to adjust the amplitude of a calibrated waveform.")
+
+
+class Real(WaveForm):
+    def __init__(self, complex_waveform: Waveform):
+        super().__init__(complex_waveform.width, complex_waveform.amplitude)
+        self.complex_waveform = complex_waveform
+
+    def at(self, time):
+        return self.complex_waveform.at(time).real
+
+    def __mul__(self, other):
+        return self.complex_waveform * other
+
+
+class Imag(Waveform):
+    def __init__(self, complex_waveform: Waveform):
+        super().__init__(complex_waveform.width, complex_waveform.amplitude)
+        self.complex_waveform = complex_waveform
+
+    def at(self, time):
+        return self.complex_waveform.at(time).imag
+
+    def __mul__(self, other):
+        return self.complex_waveform * other

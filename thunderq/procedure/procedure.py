@@ -1,3 +1,5 @@
+from thunderq.helper.sequence import Sequence
+
 class Procedure:
     # Describe the change of waveforms during a time-span.
     # But it can also be used to do other task unrelated to waveforms.
@@ -5,7 +7,7 @@ class Procedure:
     def __init__(self, name):
         self.name = name
 
-    def pre_run(self):
+    def pre_run(self, sequence: Sequence):
         raise NotImplementedError
 
     def post_run(self):
@@ -13,5 +15,3 @@ class Procedure:
 
     def snapshot(self):
         raise NotImplementedError
-
-    # TODO: Sequence, Time span

@@ -1,12 +1,13 @@
-## Arbitary Waveform Generator
-
 import numpy as np
 
 from ..helper.waveform import WaveForm, CalibratedIQ
 
+import path_to_devices
 from keysightSD1 import SD_AOU, SD_Wave, SD_Waveshapes, SD_TriggerExternalSources, SD_TriggerBehaviors, \
     SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
 
+
+## Arbitary Waveform Generator
 class AWG:
     def __init__(self, _name, _sample_rate):
         self.name = _name
@@ -31,6 +32,9 @@ class AWGChannel:
     def write_waveform(self, waveform: WaveForm):
         self.AWG.write_waveform(self.channel, waveform)
 
+    def run(self):
+        self.AWG.run()
+
 
 def txt_to_dict(filename):
     text = open(filename).read()
@@ -44,7 +48,7 @@ def txt_to_dict(filename):
 
 class AWG_M3202A(AWG):
     def __init__(self, chassis, slot, sample_rate=1e9):
-        super().__init__(f"AWG M3202A Chassis{chassis} Slot{slot}")
+        super().__init__(f"AWG M3202A Chassis{chassis} Slot{slot}", sample_rate)
         self.sample_rate = sample_rate
         self.dev = SD_AOU()
         self.chassis = chassis
@@ -70,7 +74,7 @@ class AWG_M3202A(AWG):
 
     def write_waveform(self, channel, waveform: WaveForm):
         sd_wave = SD_Wave()
-        wave_data = waveform.sample(self.sample_rate)
+        wave_data = waveform.sample(self.sample_rate, min_unit=16)
         sd_wave.newFromArrayDouble(SD_WaveformTypes.WAVE_ANALOG, wave_data)
         self.dev.waveformLoad(sd_wave, wavenumber=channel)
         self.dev.AWGqueueWaveform(channel,
