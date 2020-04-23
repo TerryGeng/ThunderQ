@@ -23,7 +23,7 @@ class Experiment:
         raise NotImplementedError
 
     def update_sequence(self):
-        if not trigger_initialized:
+        if not self.trigger_initialized:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
         self.sequence.setup_AWG()

@@ -92,7 +92,9 @@ class Sequence:
             self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, slice.duration)
 
     def setup_AWG(self):
-        slice.setup_AWG()
+        self.trigger_device.set_cycle_frequency(self.cycle_frequency)
+        for slice in self.slices.values():
+          slice.setup_AWG()
 
     def run(self):
         for slice in self.slices.values():
