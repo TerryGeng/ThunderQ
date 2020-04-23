@@ -17,9 +17,16 @@ class Experiment:
         self.end_at = ""
         self.sequence = None
         self.sequence_initialized = False
+        self.trigger_initialized = False
 
     def initialize_sequence(self):
         raise NotImplementedError
+
+    def update_sequence(self):
+        if not trigger_initialized:
+            self.sequence.setup_trigger()
+            self.trigger_initialized = True
+        self.sequence.setup_AWG()
 
     def add_procedure(self, procedure: Procedure):
         self.procedures.append(procedure)
@@ -39,8 +46,7 @@ class Experiment:
             assert isinstance(procedure, Procedure)
             procedure.pre_run(self.sequence)
 
-        self.sequence.setup()
-        self.sequence.run()
+        self.update_sequence()
 
         for procedure in self.procedures:
             procedure.post_run()

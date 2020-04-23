@@ -82,12 +82,17 @@ class Sequence:
         return self.slices[name]
 
     def setup(self):
+        self.setup_trigger()
+        self.setup_AWG()
+
+    def setup_trigger(self):
         self.trigger_device.set_cycle_frequency(self.cycle_frequency)
         for slice in self.slices.values():
             assert isinstance(slice, Sequence.Slice)
             self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, slice.duration)
 
-            slice.setup_AWG()
+    def setup_AWG(self):
+        slice.setup_AWG()
 
     def run(self):
         for slice in self.slices.values():
