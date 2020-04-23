@@ -44,6 +44,8 @@ class TestExperiment(Experiment):
 
         self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
         self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")
+        
+        self.sequence_sent = False
 
     def initialize_sequence(self):
         self.sequence = Sequence(TriggerDG645(), 5000)
@@ -64,7 +66,11 @@ class TestExperiment(Experiment):
             self.probe_procedure.set_probe_params(probe_freq, self.probe_mod_amp, self.probe_power)
 
             self.run_single_shot()
-            self.sequence_sender.send(self.sequence.plot())
+
+            if not self.sequence_sent:
+                self.sequence_sender.send(self.sequence.plot())
+                plt.close()
+                self.sequence_sent = True
 
             result_amp, result_phase = self.probe_procedure.last_result()
 
@@ -72,10 +78,10 @@ class TestExperiment(Experiment):
             self.result_amp.append(result_amp)
             self.result_phase.append(result_phase)
 
-            fig, ax = plt.subplots(111)
+            fig, ax = plt.subplots(1,1, figsize=(5, 3))
             ax.plot(self.result_freq, self.result_amp, color="b")
-            ax.xlabel("Probe Frequency / GHz")
-            ax.ylabel("Amplitude / arb.")
+            ax.set_xlabel("Probe Frequency / GHz")
+            ax.set_ylabel("Amplitude / arb.")
             fig.tight_layout()
             self.plot_sender.send(fig)
             plt.close()
