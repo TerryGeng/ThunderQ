@@ -40,6 +40,7 @@ class TestExperiment(Experiment):
 
         self.result_freq = []
         self.result_amp = []
+        self.result_phase = []
 
         self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
         self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")

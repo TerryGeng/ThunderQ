@@ -101,6 +101,8 @@ class Sequence:
 
         fig, (ax) = plt.subplots(1, 1, figsize=(8, len(self.slices) * 1))
 
+        fig.tight_layout()
+
         for spine in ["left", "top", "right"]:
             ax.spines[spine].set_visible(False)
 
@@ -140,5 +142,5 @@ class Sequence:
             ax.annotate(slice.name, xy=(text_x, height + 0.5), fontsize=11, ha="right", va="center")
             i += 1
 
-        plt.show()
+        return fig
 

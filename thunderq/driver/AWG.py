@@ -76,13 +76,13 @@ class AWG_M3202A(AWG):
         sd_wave = SD_Wave()
         wave_data = waveform.sample(self.sample_rate, min_unit=16)
         sd_wave.newFromArrayDouble(SD_WaveformTypes.WAVE_ANALOG, wave_data)
-        self.dev.waveformLoad(sd_wave, wavenumber=channel)
+        self.dev.waveformLoad(sd_wave, waveformNumber=channel)
         self.dev.AWGqueueWaveform(channel,
                                   waveformNumber=channel,
                                   triggerMode=SD_TriggerModes.EXTTRIG,
-                                  startdelay=0,
+                                  startDelay=0,
                                   cycles=1,
-                                  prescalers=0)
+                                  prescaler=0)
 
     def run(self):
         for ch in [1, 2, 3, 4]:

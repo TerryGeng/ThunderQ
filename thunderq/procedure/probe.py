@@ -51,8 +51,8 @@ class IQModProbe(Procedure):
         if not self.probe_freq or not self.mod_amp:
             raise ValueError("Probe parameters should be set first.")
 
-        self.probe_lo_dev.set_frequency_amplitude(self.probe_freq - self.mod_freq, self.mod_amp)
-        self.probe_lo_dev.run()
+        self.lo_dev.set_frequency_amplitude(self.probe_freq - self.mod_freq, self.mod_amp)
+        self.lo_dev.run()
 
         I_waveform, Q_waveform = self._build_readout_waveform(self.probe_len, self.mod_amp)
 
@@ -73,19 +73,19 @@ class IQModProbe(Procedure):
         Q_amp_sum, Q_phase_sum = 0, 0
 
         for ch_I_data in ch_I_datas:
-            I_amp, I_phase = self.get_amp_phase(self.probe_mod_freq, ch_I_data)
+            I_amp, I_phase = self.get_amp_phase(self.mod_freq, ch_I_data)
             I_amp_sum += I_amp
             I_phase_sum += I_phase
 
         for ch_Q_data in ch_Q_datas:
-            Q_amp, Q_phase = self.get_amp_phase(self.probe_mod_freq, ch_Q_data)
+            Q_amp, Q_phase = self.get_amp_phase(self.mod_freq, ch_Q_data)
             Q_amp_sum += Q_amp
             Q_phase_sum += Q_phase
 
-        I_amp_avg = I_amp_sum / self.repeats
-        I_phase_avg = I_phase_sum / self.repeats
-        Q_amp_avg = Q_amp_sum / self.repeats
-        Q_phase_avg = Q_phase_sum / self.repeats # I_phase_avg should almost equal to Q_phase_avg
+        I_amp_avg = I_amp_sum / self.repeat
+        I_phase_avg = I_phase_sum / self.repeat
+        Q_amp_avg = Q_amp_sum / self.repeat
+        Q_phase_avg = Q_phase_sum / self.repeat # I_phase_avg should almost equal to Q_phase_avg
 
         self.result_amp = np.sqrt(I_amp_avg**2 + Q_amp_avg**2)
         self.result_phase = np.arctan2(Q_amp_avg, I_amp_avg)
