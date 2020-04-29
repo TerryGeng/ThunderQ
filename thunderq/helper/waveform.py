@@ -241,8 +241,8 @@ class CalibratedIQ(WaveForm):
         self.offset_Q = 0
 
         if IQ_cali and carry_freq:
-            self.scale_I, self.offset_I = IQ_cali.I_amp_factor, IQ_cali.I_offset
-            self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor, IQ_cali.Q_offset
+            self.scale_I, self.offset_I = IQ_cali.I_amp_factor, 0  # IQ_cali.I_offset
+            self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor, 0  # IQ_cali.Q_offset
 
             _phi_I, _phi_Q = IQ_cali.I_phase_shift, IQ_cali.Q_phase_shift
 
@@ -255,8 +255,9 @@ class CalibratedIQ(WaveForm):
         Q_value = self.carry_IQ.at(time + self.left_shift_Q).imag
 
         # Amplitude calibration
-        I_value = I_value * self.scale_I + self.offset_I
-        Q_value = Q_value * self.scale_Q + self.offset_Q
+        # Note: offset should be set on AWGChannel, not here.
+        I_value = I_value * self.scale_I  # + self.offset_I
+        Q_value = Q_value * self.scale_Q  # + self.offset_Q
 
         return I_value + 1j * Q_value
 

@@ -1,6 +1,7 @@
 import numpy as np
 from thunderq.helper import waveform as waveform
 from thunderq.helper.sequence import Sequence
+from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.driver.acqusition import AcquisitionDevice
 from thunderq.driver.ASG import ASG
 from thunderq.procedure import Procedure
@@ -10,31 +11,29 @@ class IQModProbe(Procedure):
                  probe_mod_slice_name: str,
                  probe_mod_I_name: str,
                  probe_mod_Q_name: str,
-                 probe_lo_slice_name: str,
                  probe_lo_dev: ASG,
                  acquisition_slice_name: str,
                  acquisition_dev: AcquisitionDevice,
-                 mod_IQ_calibrate_array = None
+                 mod_IQ_calibration: IQCalibrationContainer = None
                  ):
 
         super().__init__("IQ Mod Probe")
         self.mod_slice = probe_mod_slice_name
         self.mod_I_name = probe_mod_I_name
         self.mod_Q_name = probe_mod_Q_name
-        self.lo_slice = probe_lo_slice_name
         self.lo_dev = probe_lo_dev
         self.acquisition_slice_name = acquisition_slice_name
         self.acquisition_dev = acquisition_dev
 
-        if not mod_IQ_calibrate_array:
-            self.mod_IQ_calib_array = [[1, 0, 0], [1, 0, 0]]
+        if not mod_IQ_calibration:
+            self.mod_IQ_calibration = IQCalibrationContainer()
         else:
-            self.mod_IQ_calib_array = mod_IQ_calibrate_array
+            self.mod_IQ_calibration = mod_IQ_calibration
 
-        self.lo_power = -5  # dBm
+        self.lo_power = 14  # dBm
 
         self.mod_freq = 50e6  # Hz
-        self.mod_amp = 1 # V
+        self.mod_amp = 0.2 # V
 
         self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
         self.readout_len = 1024
@@ -59,9 +58,11 @@ class IQModProbe(Procedure):
         self.lo_dev.set_frequency_amplitude(self.probe_freq + self.mod_freq, self.mod_amp)
         self.lo_dev.run()
 
-        I_waveform, Q_waveform = self._build_readout_waveform(self.probe_len, self.mod_amp)
+        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
+        mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
+        mod_slice.set_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
         mod_slice.add_waveform(self.mod_I_name, I_waveform)
         mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
         mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
@@ -98,25 +99,12 @@ class IQModProbe(Procedure):
     def last_result(self):
         return self.result_amp, self.result_phase
 
-    def _build_readout_waveform(self, prob_len, prob_mod_rel_amp):
+    def build_readout_waveform(self, prob_len, prob_mod_rel_amp):
         dc_waveform = waveform.DC(prob_len, 1) * prob_mod_rel_amp
-
-        # vIQmixer here is used just for calibrating IQ pulse
-        # I_pulse = wave.vIQmixer.up_conversion(
-        #     self.heterodyne_freq,
-        #     I = self.mod_I_src.max_amplitude * dc_waveform,
-        #     cali_array = self.mod_IQ_calib_array
-        # )
-        # Q_pulse = wave.vIQmixer.up_conversion(
-        #     self.heterodyne_freq,
-        #     Q = self.mod_Q_src.max_amplitude * dc_waveform,
-        #     cali_array = self.mod_IQ_calib_array
-        # )
-        # TODO: Above part is actually not completely correct.
 
         IQ_waveform = waveform.CalibratedIQ(self.mod_freq,
                                             I_waveform=dc_waveform,
-                                            carry_cali_matrix=self.mod_IQ_calib_array)
+                                            IQ_cali=self.mod_IQ_calibration)
 
         return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 

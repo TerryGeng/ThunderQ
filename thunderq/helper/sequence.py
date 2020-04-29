@@ -36,6 +36,9 @@ class Sequence:
                 self.AWG_waveforms[channel_name] = \
                     self.AWG_waveforms[channel_name].concat(waveform)
 
+        def set_offset(self, channel_name, offset_volts):
+            self.AWG_channels[channel_name].set_offset(offset_volts)
+
         def set_waveform_padding(self, channel_name, padding_position=0):
             # padding_position is one of Sequence.PADDING_BEFORE and Sequence.PADDING_BEHIND
             waveform_width = self.AWG_waveforms[channel_name].width

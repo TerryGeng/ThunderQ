@@ -19,14 +19,14 @@ class TestExperiment(Sweep1DExperiment):
     def __init__(self):
         super().__init__("Probe Experiment")
 
-        self.probe_mod_freq = 0.05e9 # 50 MHz
+        self.probe_mod_freq = 0.05e9  # 50 MHz
         self.center_probe_freq = 7.0645e9
         self.probe_freq = self.center_probe_freq
 
         # These are sweepable parameters. Will be update by update_parameters() each round.
-        self.probe_mod_amp = 0.2 # Volts
-        self.probe_power = 14 # dBm
-        self.probe_freq = 7.0645e9 # GHz
+        self.probe_mod_amp = 0.2  # Volts
+        self.probe_power = 14  # dBm
+        self.probe_freq = 7.0645e9  # GHz
 
         # It is always slow to load drivers. Be patient.
         runtime.logger.info("Initializing M3202A...")
@@ -49,11 +49,10 @@ class TestExperiment(Sweep1DExperiment):
             probe_mod_slice_name="probe_mod",
             probe_mod_I_name="probe_mod_I",
             probe_mod_Q_name="probe_mod_Q",
-            probe_lo_slice_name="probe_lo",
             probe_lo_dev=self.probe_lo_dev,
-            acquisition_slice_name="probe_lo",
+            acquisition_slice_name="acquisition",
             acquisition_dev=self.acquisition_dev,
-            mod_IQ_calibrate_array=read_IQ_calibrate_file(
+            mod_IQ_calibration=read_IQ_calibrate_file(
                 "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\S2_IQ.txt")
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
