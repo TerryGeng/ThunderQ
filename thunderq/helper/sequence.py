@@ -55,7 +55,7 @@ class Sequence:
 
         def setup_AWG(self):
             for channel_name, channel in self.AWG_channels.items():
-                if self.AWG_waveforms[channel_name].width != self.duration:
+                if abs(self.AWG_waveforms[channel_name].width - self.duration) > 1e-9:
                     runtime.logger.warning(f"Sequence Slice {self.name}:"
                                            f" waveform width {self.AWG_waveforms[channel_name].width}s"
                                            f" not equals to slice duration {self.duration}s.")
@@ -112,7 +112,8 @@ class Sequence:
         fig = Figure(figsize=(8, len(self.slices) * 1))
         ax = fig.subplots(1, 1)
 
-        fig.tight_layout()
+        # take years to run this line
+        #fig.tight_layout()
 
         for spine in ["left", "top", "right"]:
             ax.spines[spine].set_visible(False)

@@ -52,8 +52,8 @@ class TestExperiment(Sweep1DExperiment):
             probe_lo_dev=self.probe_lo_dev,
             acquisition_slice_name="acquisition",
             acquisition_dev=self.acquisition_dev,
-            mod_IQ_calibration=read_IQ_calibrate_file(
-                "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\S2_IQ.txt")
+            # mod_IQ_calibration=read_IQ_calibrate_file(
+            #     "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\S2_IQ.txt")
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 

@@ -49,7 +49,6 @@ class Sweep1DExperiment(Experiment):
     def run(self):
         for point in self.sweep_points:
             setattr(self, self.sweep_parameter_name, point)
-            self.swept_points.append(point)
             if self.sweep_parameter_unit:
                 self.update_status(f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
                                    f" at {point} {self.sweep_parameter_unit}")
@@ -61,6 +60,7 @@ class Sweep1DExperiment(Experiment):
             self.run_single_shot()
             self.retrieve_data()
 
+            self.swept_points.append(point)
             for result in self.result_names:
                 self.results[result].append(getattr(self, result))
 
@@ -81,11 +81,11 @@ class Sweep1DExperiment(Experiment):
         fig = Figure(figsize=(5, 3))
         axes = fig.subplots(1, len(self.result_names))
         for i in range(len(self.result_names)):
-            ax = axes[i]
+            ax = axes[i] if len(self.result_names) > 1 else axes
             result_name = self.result_names[i]
             param_unit = self.sweep_parameter_unit
             result_unit = self.result_units[i]
-            ax.plot(self.swept_points, getattr(self, result_name), color=colors[ i % len(colors) ])
+            ax.plot(self.swept_points, self.results[result_name], color=colors[ i % len(colors) ])
             ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
             ax.set_ylabel(f"{result_name} / {result_unit}")
         fig.tight_layout()
