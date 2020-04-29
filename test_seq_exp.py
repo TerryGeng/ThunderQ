@@ -3,8 +3,9 @@ import threading
 import numpy as np
 from matplotlib.figure import Figure
 
-from thunderq.experiment import Experiment, run_wrapper
+from thunderq.experiment import Experiment, run_wrapper, Sweep1DExperiment
 from thunderq.helper.sequence import Sequence
+from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file, IQCalibrationContainer
 from thunderq.driver.AWG import AWGChannel, AWG_M3202A
 from thunderq.driver.ASG import ASG_E8257C
 from thunderq.driver.acqusition import Acquisition_ATS9870
@@ -14,7 +15,7 @@ import thunderq.runtime as runtime
 from thunder_board import senders
 
 
-class TestExperiment(Experiment):
+class TestExperiment(Sweep1DExperiment):
     def __init__(self):
         super().__init__("Probe Experiment")
 
@@ -22,8 +23,10 @@ class TestExperiment(Experiment):
         self.center_probe_freq = 7.0645e9
         self.probe_freq = self.center_probe_freq
 
+        # These are sweepable parameters. Will be update by update_parameters() each round.
         self.probe_mod_amp = 0.2 # Volts
-        self.probe_power = -5 # dBm
+        self.probe_power = 14 # dBm
+        self.probe_freq = 7.0645e9 # GHz
 
         # It is always slow to load drivers. Be patient.
         runtime.logger.info("Initializing M3202A...")
@@ -49,20 +52,21 @@ class TestExperiment(Experiment):
             probe_lo_slice_name="probe_lo",
             probe_lo_dev=self.probe_lo_dev,
             acquisition_slice_name="probe_lo",
-            acquisition_dev=self.acquisition_dev
+            acquisition_dev=self.acquisition_dev,
+            mod_IQ_calibrate_array=read_IQ_calibrate_file(
+                "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\S2_IQ.txt")
+            # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 
         self.probe_procedure.repeat = 200
 
         self.add_procedure(self.probe_procedure)
 
-        self.result_freq = []
-        self.result_amp = []
-        self.result_phase = []
+        # Realtime result
+        self.result_amp = None
+        self.result_phase = None
 
-        self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
         self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")
-        
         self.sequence_sent = False
 
     def initialize_sequence(self):
@@ -77,53 +81,24 @@ class TestExperiment(Experiment):
         self.sequence.add_slice("acquisition", trigger_line="EF", start_from=101e-6, duration=4e-6)
         runtime.logger.log("Done")
 
-    @run_wrapper
-    def run(self):
-        for probe_freq in np.linspace(self.center_probe_freq - 0.01e9, self.center_probe_freq + 0.01e9, 100):
-            self.update_status(f"Probe at {(probe_freq/1e9):5f} GHz")
-            self.probe_procedure.set_probe_params(probe_freq, self.probe_mod_amp, self.probe_power)
+    def update_parameters(self):
+        self.probe_procedure.set_probe_params(self.probe_freq, self.probe_mod_amp, self.probe_power)
 
-            self.run_single_shot()
+    def retrieve_data(self):
+        self.result_amp, self.result_phase = self.probe_procedure.last_result()
 
-            result_amp, result_phase = self.probe_procedure.last_result()
-
-            self.result_freq.append(probe_freq / 1e9)
-            self.result_amp.append(result_amp)
-            self.result_phase.append(result_phase)
-
-            # start plotting in a new thread, since plotting and sending is time consuming (about 5 secs).
-            threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
-
-    def make_plot_and_send(self):
+    def update_sequence(self):
+        super().update_sequence()
         if not self.sequence_sent:
             self.sequence_sender.send(self.sequence.plot())
             self.sequence_sent = True
 
-        fig = Figure(figsize=(5, 3))
-        ax = fig.subplots(1,1)
-        ax.plot(self.result_freq, self.result_amp, color="b")
-        ax.set_xlabel("Probe Frequency / GHz")
-        ax.set_ylabel("Amplitude / arb.")
-        fig.tight_layout()
-        self.plot_sender.send(fig)
-
-    def get_amp_phase(self, freq, data, sample_rate=1e9):
-        data_length = len(data)
-        sin_sum = 0
-        cos_sum = 0
-        for t in range(data_length):
-            cos_projection = np.cos(2 * np.pi * freq * t / sample_rate)
-            sin_projection = np.sin(2 * np.pi * freq * t / sample_rate)
-            sin_sum += data[t] * sin_projection
-            cos_sum += data[t] * cos_projection
-
-        sin_avg = 2 * sin_sum / data_length
-        cos_avg = 2 * cos_sum / data_length
-
-        amp = np.sqrt(sin_avg**2 + cos_avg**2)
-        phase = np.arctan2(sin_avg, cos_avg)
-
-        return amp, phase
 
 exp = TestExperiment()
-exp.run()
+exp.sweep(
+    parameter_name="probe_freq",
+    parameter_unit="GHz",
+    points=np.linspace(exp.center_probe_freq - 0.01e9, exp.center_probe_freq + 0.01e9, 100),
+    result_name="result_amp",
+    result_unit="arb."
+)

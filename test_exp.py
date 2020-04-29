@@ -111,5 +111,16 @@ class TestExperiment(Experiment):
 
         return amp, phase
 
+    def txt_to_dict(self, filename):
+        text = open(filename).read()
+        _dict = {}
+        for line in text:
+            fields = line.split()
+            _dict[fields[0]] = fields[1]
+
+        return _dict
+
+
+
 exp = TestExperiment()
 exp.run()

@@ -10,6 +10,7 @@
 #
 
 import numpy as np
+from .iq_calibration_container import IQCalibrationContainer
 
 class WaveForm:
     def __init__(self, width, amplitude):
@@ -207,7 +208,12 @@ class Gaussian(WaveForm):
 
 
 class CalibratedIQ(WaveForm):
-    def __init__(self, carry_freq, I_waveform: WaveForm=None, Q_waveform: WaveForm=None, carry_cali_matrix=None, phase_unit_deg=True):
+    def __init__(self,
+                 carry_freq,
+                 I_waveform: WaveForm=None,
+                 Q_waveform: WaveForm=None,
+                 IQ_cali: IQCalibrationContainer=None
+                 ):
         super().__init__(0, 1)
 
         self.omega = 2*np.pi*carry_freq
@@ -234,13 +240,11 @@ class CalibratedIQ(WaveForm):
         self.offset_I = 0
         self.offset_Q = 0
 
-        if carry_cali_matrix and carry_freq:
-            _carry_cali = np.array(carry_cali_matrix)
-            self.scale_I, self.offset_I = _carry_cali[0,:2]
-            self.scale_Q, self.offset_Q = _carry_cali[1,:2]
+        if IQ_cali and carry_freq:
+            self.scale_I, self.offset_I = IQ_cali.I_amp_factor, IQ_cali.I_offset
+            self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor, IQ_cali.Q_offset
 
-            # Convert to to RAD
-            _phi_I, _phi_Q = _carry_cali[:,2]*np.pi/180 if phase_unit_deg else _carry_cali[:,2]
+            _phi_I, _phi_Q = IQ_cali.I_phase_shift, IQ_cali.Q_phase_shift
 
             # Calculate phase shift, equivalent to time shift
             self.left_shift_I = _phi_I / (2*np.pi*carry_freq)

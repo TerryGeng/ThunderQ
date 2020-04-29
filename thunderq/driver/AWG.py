@@ -16,6 +16,9 @@ class AWG:
     def write_waveform(self, channel, waveform: WaveForm):
         raise NotImplementedError
 
+    def set_channel_offset(self, channel, offset_voltage):
+        raise NotImplementedError
+
     def stop(self):
         raise NotImplementedError
 
@@ -32,18 +35,11 @@ class AWGChannel:
     def write_waveform(self, waveform: WaveForm):
         self.AWG.write_waveform(self.channel, waveform)
 
+    def set_offset(self, offset_voltage):
+        self.AWG.set_channel_offset(self.channel, offset_voltage)
+
     def run(self):
         self.AWG.run()
-
-
-def txt_to_dict(filename):
-    text = open(filename).read()
-    _dict = {}
-    for line in text:
-        fields = line.split()
-        _dict[fields[0]] = fields[1]
-
-    return _dict
 
 
 class AWG_M3202A(AWG):
@@ -83,6 +79,9 @@ class AWG_M3202A(AWG):
                                   startDelay=0,
                                   cycles=1,
                                   prescaler=0)
+
+    def set_channel_offset(self, channel, offset_voltage):
+        self.dev.channelOffset(channel, offset_voltage)
 
     def run(self):
         for ch in [1, 2, 3, 4]:

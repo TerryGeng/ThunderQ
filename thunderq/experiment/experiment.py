@@ -13,8 +13,6 @@ class Experiment:
         self.procedures = []
 
         self.send_status_enable = True
-        self.info_stack = []
-        self.end_at = ""
         self.sequence = None
         self.sequence_initialized = False
         self.trigger_initialized = False
@@ -40,6 +38,7 @@ class Experiment:
 
     def run_single_shot(self):
         if not self.sequence_initialized:
+            self.sequence_initialized = True
             self.initialize_sequence()
 
         for procedure in self.procedures:

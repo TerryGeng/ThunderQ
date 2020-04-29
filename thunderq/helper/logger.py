@@ -26,7 +26,7 @@ class Logger:
                 pass
 
     def log(self, msg):
-        self.send_log(msg)
+        self.info(msg)
 
     def info(self, msg):
         msg = self._log_stamp() + msg

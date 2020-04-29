@@ -13,7 +13,8 @@ class IQModProbe(Procedure):
                  probe_lo_slice_name: str,
                  probe_lo_dev: ASG,
                  acquisition_slice_name: str,
-                 acquisition_dev: AcquisitionDevice
+                 acquisition_dev: AcquisitionDevice,
+                 mod_IQ_calibrate_array = None
                  ):
 
         super().__init__("IQ Mod Probe")
@@ -25,7 +26,10 @@ class IQModProbe(Procedure):
         self.acquisition_slice_name = acquisition_slice_name
         self.acquisition_dev = acquisition_dev
 
-        self.mod_IQ_calib_array = [[1, 0, 0], [1, 0, 0]]
+        if not mod_IQ_calibrate_array:
+            self.mod_IQ_calib_array = [[1, 0, 0], [1, 0, 0]]
+        else:
+            self.mod_IQ_calib_array = mod_IQ_calibrate_array
 
         self.lo_power = -5  # dBm
 
@@ -51,7 +55,8 @@ class IQModProbe(Procedure):
         if not self.probe_freq or not self.mod_amp:
             raise ValueError("Probe parameters should be set first.")
 
-        self.lo_dev.set_frequency_amplitude(self.probe_freq - self.mod_freq, self.mod_amp)
+        # Lower sideband is kept, see IQ section of my thesis.
+        self.lo_dev.set_frequency_amplitude(self.probe_freq + self.mod_freq, self.mod_amp)
         self.lo_dev.run()
 
         I_waveform, Q_waveform = self._build_readout_waveform(self.probe_len, self.mod_amp)
