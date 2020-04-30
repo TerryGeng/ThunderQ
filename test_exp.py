@@ -25,14 +25,14 @@ class TestExperiment(Experiment):
         # self.drive_freq = 5.757e9 - self.drive_mod_freq
         # self.drive_power = 25
 
-        trigger = DG645.DEVICE()
-        trigger.basic_setup()
-        trigger.setup_FREQ(5000)
-        trigger.setup_T1(4e-6, 2.5)
-        trigger.setup_AB(100e-6, 4e-6, 2.5)
-        trigger.setup_CD(100e-6, 4e-6, 2.5)
-        trigger.setup_EF(101e-6, 4e-6, 2.5)
-        trigger.print_out_all_errors()
+        #trigger = DG645.DEVICE()
+        #trigger.basic_setup()
+        #trigger.setup_FREQ(5000)
+        #trigger.setup_T1(4e-6, 2.5)
+        #trigger.setup_AB(100e-6, 4e-6, 2.5)
+        #trigger.setup_CD(100e-6, 4e-6, 2.5)
+        #trigger.setup_EF(101e-6, 4e-6, 2.5)
+        #trigger.print_out_all_errors()
 
         self.probe_src = E8257C.DEVICE()
         self.probe_src.basic_setup()
