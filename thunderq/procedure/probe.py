@@ -58,7 +58,7 @@ class IQModProbe(Procedure):
         # Lower sideband is kept, see IQ section of my thesis.
         lo_freq = self.probe_freq + self.mod_freq
         runtime.logger.info(f"Probe setup: LO freq {lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz.")
-        self.lo_dev.set_frequency_amplitude(lo_freq, self.mod_amp)
+        self.lo_dev.set_frequency_amplitude(lo_freq, self.lo_power)
         self.lo_dev.run()
 
         I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_amp)
