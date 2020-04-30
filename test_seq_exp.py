@@ -21,10 +21,9 @@ class TestExperiment(Sweep1DExperiment):
 
         self.probe_mod_freq = 0.05e9  # 50 MHz
         self.center_probe_freq = 7.0645e9
-        self.probe_freq = self.center_probe_freq
 
         # These are sweepable parameters. Will be update by update_parameters() each round.
-        self.probe_freq = 7.0645e9  # GHz
+        self.probe_freq = self.center_probe_freq
 
         # It is always slow to load drivers. Be patient.
         runtime.logger.info("Initializing M3202A...")

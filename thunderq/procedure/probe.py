@@ -64,7 +64,7 @@ class IQModProbe(Procedure):
         self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
         self.lo_dev.run()
 
-        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_freq, self.mod_amp)
+        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, mod_freq, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
         mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
