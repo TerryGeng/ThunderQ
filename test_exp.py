@@ -2,7 +2,7 @@ import path_to_devices
 import time
 import numpy as np
 import threading
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 from thunderq.experiment import Experiment, run_wrapper
 from thunderq.helper import waveform as waveform
@@ -23,7 +23,7 @@ class TestExperiment(Experiment):
         self.probe_mod_amp = 1
         self.center_probe_freq = 7.0645e9
         self.probe_power = 14 # in dBm
-        self.probe_freq = self.center_probe_freq
+        self.lo_freq = 7.0145e9
 
         # self.drive_mod_freq = 0.05e9
         # self.drive_mod_power = 0.3
@@ -54,10 +54,6 @@ class TestExperiment(Experiment):
             "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
 
         #self.probe_mod.simple_shoot(1, 2, 0, self.probe_mod_freq / 1e9, 4096, np.pi/4)
-        I, Q = self.build_readout_waveform(1024, self.probe_mod_freq, self.probe_mod_amp)
-        self.probe_mod_I.write_waveform(I)
-        self.probe_mod_Q.write_waveform(Q)
-        self.probe_mod_dev.run()
 
         self.ATS9870 = ATS9870.DEVICE()
 
@@ -69,7 +65,13 @@ class TestExperiment(Experiment):
         self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
 
     def pre_run(self):
-        self.probe_src.setFreqAmp(self.probe_freq - self.probe_mod_freq, self.probe_power)
+
+        I, Q = self.build_readout_waveform(4096*1e-9, self.probe_mod_freq, self.probe_mod_amp)
+        self.probe_mod_I.write_waveform(I)
+        self.probe_mod_Q.write_waveform(Q)
+        self.probe_mod_dev.run()
+        self.probe_src.setFreqAmp(self.lo_freq, self.probe_power)
+        #self.probe_src.setFreqAmp(self.probe_freq - self.probe_mod_freq, self.probe_power)
         self.probe_src.RFON()
         self.ATS9870.req(0, 1024, repeats=self.repeats)
 
@@ -99,18 +101,21 @@ class TestExperiment(Experiment):
         threading.Thread(target=self.plot).start()
 
     def plot(self):
-        plt.plot(self.result_freq, self.result_amp, color="b")
-        plt.xlabel("Probe Frequency / GHz")
-        plt.ylabel("Amplitude / arb.")
-        self.plot_sender.send(plt)
-        plt.close()
+        fig = Figure()
+        ax = fig.subplots(1, 1)
+        ax.plot(self.result_freq, self.result_amp, color="b")
+        ax.set_xlabel("Probe Frequency / GHz")
+        ax.set_ylabel("Amplitude / arb.")
+        self.plot_sender.send(fig)
 
     @run_wrapper
     def run(self):
         print("Experiment running...")
         for probe_freq in np.linspace(self.center_probe_freq - 0.01e9, self.center_probe_freq + 0.01e9, 100):
-            self.update_status(f"Probe at {(probe_freq/1e9):5f} GHz")
             self.probe_freq = probe_freq
+            self.probe_mod_freq = probe_freq - self.lo_freq
+            self.update_status(f"Probe at {(probe_freq/1e9):5f} GHz")
+            #self.probe_freq = probe_freq
             self.pre_run()
             self.post_run()
 
