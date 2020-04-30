@@ -7,7 +7,9 @@ class IQCalibrationContainer:
                  I_amp_factor: float=1,
                  Q_amp_factor: float=1,
                  I_phase_shift: float=0,
-                 Q_phase_shift: float=0
+                 Q_phase_shift: float=0,
+                 I_time_offset: float=0,
+                 Q_time_offset: float=0
                  ):
         self.I_offset = I_offset
         self.Q_offset = Q_offset
@@ -15,6 +17,8 @@ class IQCalibrationContainer:
         self.Q_amp_factor = Q_amp_factor
         self.I_phase_shift = I_phase_shift
         self.Q_phase_shift = Q_phase_shift
+        self.I_time_offset = I_time_offset
+        self.Q_time_offset = Q_time_offset
 
 def txt_to_dict(filename):
     text = open(filename).read()
@@ -35,5 +39,7 @@ def read_IQ_calibrate_file(filename):
         I_amp_factor=I_amp_factor,
         Q_amp_factor=Q_amp_factor,
         I_phase_shift=0,
-        Q_phase_shift=float(_dict['Q_phase_shift'])
+        Q_phase_shift=float(_dict['Q_phase_shift'])/1e9,
+        I_time_offset=0,
+        Q_time_offset=float(_dict['Q_time_offset'])/1e9  # If this term is < 1e-9, then it is meaningless, since it goes beyond sample rate
     )

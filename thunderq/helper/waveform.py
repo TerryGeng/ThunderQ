@@ -244,11 +244,12 @@ class CalibratedIQ(WaveForm):
             self.scale_I, self.offset_I = IQ_cali.I_amp_factor, 0  # IQ_cali.I_offset
             self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor, 0  # IQ_cali.Q_offset
 
-            _phi_I, _phi_Q = IQ_cali.I_phase_shift, IQ_cali.Q_phase_shift
+            _phi_I = IQ_cali.I_phase_shift + IQ_cali.I_time_offset*self.omega
+            _phi_Q = IQ_cali.Q_phase_shift + IQ_cali.Q_time_offset*self.omega
 
             # Calculate phase shift, equivalent to time shift
-            self.left_shift_I = _phi_I / (2*np.pi*carry_freq)
-            self.left_shift_Q = _phi_Q / (2*np.pi*carry_freq)
+            self.left_shift_I = IQ_cali.I_phase_shift / self.omega + IQ_cali.I_time_offset
+            self.left_shift_Q = IQ_cali.Q_phase_shift / self.omega + IQ_cali.Q_time_offset
 
     def at(self, time):
         I_value = self.carry_IQ.at(time + self.left_shift_I).real
