@@ -5,6 +5,7 @@ from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.driver.acqusition import AcquisitionDevice
 from thunderq.driver.ASG import ASG
 from thunderq.procedure import Procedure
+import thunderq.runtime as runtime
 
 class IQModProbe(Procedure):
     def __init__(self,
@@ -55,7 +56,9 @@ class IQModProbe(Procedure):
             raise ValueError("Probe parameters should be set first.")
 
         # Lower sideband is kept, see IQ section of my thesis.
-        self.lo_dev.set_frequency_amplitude(self.probe_freq + self.mod_freq, self.mod_amp)
+        lo_freq = self.probe_freq + self.mod_freq
+        runtime.logger.info(f"Probe setup: LO freq {lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz.")
+        self.lo_dev.set_frequency_amplitude(lo_freq, self.mod_amp)
         self.lo_dev.run()
 
         I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_amp)

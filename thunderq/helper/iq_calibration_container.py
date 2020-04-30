@@ -21,7 +21,7 @@ class IQCalibrationContainer:
         self.Q_time_offset = Q_time_offset
 
 def txt_to_dict(filename):
-    text = open(filename).read()
+    text = open(filename).readlines()
     _dict = {}
     for line in text:
         fields = line.split()
@@ -32,14 +32,14 @@ def txt_to_dict(filename):
 def read_IQ_calibrate_file(filename):
     _dict = txt_to_dict(filename)
     I_amp_factor = 1
-    Q_amp_factor = math.sin(float(_dict['change_mod_angle'])) / math.cos(float(_dict['change_mod_angle']))  # This sin/cos trick doesn't make sense to me. See my thesis for more details.
+    Q_amp_factor = math.sin(float(_dict['change_mod_power_angle'])) / math.cos(float(_dict['change_mod_power_angle']))  # This sin/cos trick doesn't make sense to me. See my thesis for more details.
     return IQCalibrationContainer(
         I_offset=float(_dict['chI_offset_volt']),
         Q_offset=float(_dict['chQ_offset_volt']),
         I_amp_factor=I_amp_factor,
         Q_amp_factor=Q_amp_factor,
         I_phase_shift=0,
-        Q_phase_shift=float(_dict['Q_phase_shift'])/1e9,
+        Q_phase_shift=float(_dict['Q_phase'])/1e9,
         I_time_offset=0,
         Q_time_offset=float(_dict['Q_time_offset'])/1e9  # If this term is < 1e-9, then it is meaningless, since it goes beyond sample rate
     )
