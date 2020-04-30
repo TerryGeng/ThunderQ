@@ -15,7 +15,7 @@ class IQCalibrationContainer:
                  Q_time_offset: float=0
                  ):
         self.lo_freq = lo_freq
-        self.lo_amp = lo_power
+        self.lo_power = lo_power
         self.mod_amp = mod_amp
         self.I_offset = I_offset
         self.Q_offset = Q_offset

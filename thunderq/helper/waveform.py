@@ -232,9 +232,9 @@ class CalibratedIQ(WaveForm):
         self.width = IQ_waveform.width
 
         if down_conversion:
-            self.carry_IQ = IQ_waveform * (Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * j)
+            self.carry_IQ = IQ_waveform * SumWave(Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * 1j)
         else:
-            self.carry_IQ = IQ_waveform * (Cos(self.width, 1, self.omega, 0) - Sin(self.width, 1, self.omega, 0) * j)
+            self.carry_IQ = IQ_waveform * SumWave(Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * (-1j))
 
         self.left_shift_I = 0
         self.left_shift_Q = 0

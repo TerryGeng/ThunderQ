@@ -34,7 +34,7 @@ class IQModProbe(Procedure):
         self.lo_freq = mod_IQ_calibration.lo_freq # Hz, the suggested value of current calibration
         self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
 
-        #self.mod_freq = 50e6  # Hz
+        self.mod_freq = 50e6  # Hz, will be overriden given a probe frequency
         self.mod_amp = mod_IQ_calibration.mod_amp # V, the suggested value of current calibration
 
         self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
@@ -59,12 +59,12 @@ class IQModProbe(Procedure):
             raise ValueError("Probe parameters should be set first.")
 
         # Upper sideband is kept, in accordance with Orkesh's calibration
-        mod_freq = self.probe_freq - self.lo_freq
-        runtime.logger.info(f"Probe setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {mod_freq/1e9} GHz.")
+        self.mod_freq = self.probe_freq - self.lo_freq
+        runtime.logger.info(f"Probe setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
         self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
         self.lo_dev.run()
 
-        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, mod_freq, self.mod_amp)
+        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_freq, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
         mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
