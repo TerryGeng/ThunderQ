@@ -1,10 +1,14 @@
 import path_to_devices
 import time
 import numpy as np
+import threading
 import matplotlib.pyplot as plt
 
 from thunderq.experiment import Experiment, run_wrapper
+from thunderq.helper import waveform as waveform
+from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file, IQCalibrationContainer
 from thunder_board import senders
+from thunderq.driver.AWG import AWGChannel, AWG_M3202A
 
 import DG645
 import E8257C
@@ -16,6 +20,7 @@ class TestExperiment(Experiment):
     def __init__(self):
         super().__init__("Probe Experiment")
         self.probe_mod_freq = 0.05e9 # 50 MHz
+        self.probe_mod_amp = 1
         self.center_probe_freq = 7.0645e9
         self.probe_power = 14 # in dBm
         self.probe_freq = self.center_probe_freq
@@ -37,9 +42,22 @@ class TestExperiment(Experiment):
         self.probe_src = E8257C.DEVICE()
         self.probe_src.basic_setup()
 
-        self.probe_mod = M3202A.DEVICE(1, 3)
-        self.probe_mod.basic_setup()
-        self.probe_mod.simple_shoot(1, 2, 0, self.probe_mod_freq / 1e9, 4096, np.pi/4)
+        # self.probe_mod = M3202A.DEVICE(1, 3)
+        # self.probe_mod.basic_setup()
+
+        self.probe_mod_dev = AWG_M3202A(1, 3)
+        self.probe_mod_I = AWGChannel("probe_mod_I", self.probe_mod_dev, 1)
+        self.probe_mod_Q = AWGChannel("probe_mod_Q", self.probe_mod_dev, 2)
+
+
+        self.mod_IQ_calibration = read_IQ_calibrate_file(
+            "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
+
+        #self.probe_mod.simple_shoot(1, 2, 0, self.probe_mod_freq / 1e9, 4096, np.pi/4)
+        I, Q = self.build_readout_waveform(1024, self.probe_mod_freq, self.probe_mod_amp)
+        self.probe_mod_I.write_waveform(I)
+        self.probe_mod_Q.write_waveform(Q)
+        self.probe_mod_dev.run()
 
         self.ATS9870 = ATS9870.DEVICE()
 
@@ -78,6 +96,9 @@ class TestExperiment(Experiment):
         self.result_freq.append(self.probe_freq / 1e9)
         self.result_amp.append(np.sqrt(I_amp_avg**2 + Q_amp_avg**2))
 
+        threading.Thread(target=self.plot).start()
+
+    def plot(self):
         plt.plot(self.result_freq, self.result_amp, color="b")
         plt.xlabel("Probe Frequency / GHz")
         plt.ylabel("Amplitude / arb.")
@@ -111,14 +132,15 @@ class TestExperiment(Experiment):
 
         return amp, phase
 
-    def txt_to_dict(self, filename):
-        text = open(filename).read()
-        _dict = {}
-        for line in text:
-            fields = line.split()
-            _dict[fields[0]] = fields[1]
+    def build_readout_waveform(self, prob_len, mod_freq, prob_mod_rel_amp):
+        dc_waveform = waveform.DC(prob_len, 1) * prob_mod_rel_amp
 
-        return _dict
+        IQ_waveform = waveform.CalibratedIQ(mod_freq,
+                                            I_waveform=dc_waveform,
+                                            IQ_cali=None,
+                                            down_conversion=False) # Use up conversion
+
+        return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
 
 
