@@ -212,7 +212,8 @@ class CalibratedIQ(WaveForm):
                  carry_freq,
                  I_waveform: WaveForm=None,
                  Q_waveform: WaveForm=None,
-                 IQ_cali: IQCalibrationContainer=None
+                 IQ_cali: IQCalibrationContainer=None,
+                 down_conversion: bool = False  # up conversion: set to True
                  ):
         super().__init__(0, 1)
 
@@ -230,7 +231,10 @@ class CalibratedIQ(WaveForm):
 
         self.width = IQ_waveform.width
 
-        self.carry_IQ = IQ_waveform * ComplexExp(self.width, 1, self.omega, 0)
+        if down_conversion:
+            self.carry_IQ = IQ_waveform * (Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * j)
+        else:
+            self.carry_IQ = IQ_waveform * (Cos(self.width, 1, self.omega, 0) - Sin(self.width, 1, self.omega, 0) * j)
 
         self.left_shift_I = 0
         self.left_shift_Q = 0

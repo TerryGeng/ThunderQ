@@ -24,8 +24,6 @@ class TestExperiment(Sweep1DExperiment):
         self.probe_freq = self.center_probe_freq
 
         # These are sweepable parameters. Will be update by update_parameters() each round.
-        self.probe_mod_amp = 0.2  # Volts
-        self.probe_power = 14  # dBm
         self.probe_freq = 7.0645e9  # GHz
 
         # It is always slow to load drivers. Be patient.
@@ -81,7 +79,7 @@ class TestExperiment(Sweep1DExperiment):
         runtime.logger.log("Done")
 
     def update_parameters(self):
-        self.probe_procedure.set_probe_params(self.probe_freq, self.probe_mod_amp, self.probe_power)
+        self.probe_procedure.set_probe_params(self.probe_freq)
 
     def retrieve_data(self):
         self.result_amp, self.result_phase = self.probe_procedure.last_result()

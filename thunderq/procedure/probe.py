@@ -31,10 +31,11 @@ class IQModProbe(Procedure):
         else:
             self.mod_IQ_calibration = mod_IQ_calibration
 
-        self.lo_power = 14  # dBm
+        self.lo_freq = mod_IQ_calibration.lo_freq # Hz, the suggested value of current calibration
+        self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
 
-        self.mod_freq = 50e6  # Hz
-        self.mod_amp = 0.2 # V
+        #self.mod_freq = 50e6  # Hz
+        self.mod_amp = mod_IQ_calibration.mod_amp # V, the suggested value of current calibration
 
         self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
         self.readout_len = 1024
@@ -46,22 +47,24 @@ class IQModProbe(Procedure):
         self.result_amp = None
         self.result_phase = None
 
-    def set_probe_params(self, probe_freq, probe_mod_amp, probe_lo_power):
+    def set_probe_params(self, probe_freq, probe_mod_amp=None, probe_lo_power=None):
         self.probe_freq = probe_freq
-        self.mod_amp = probe_mod_amp
-        self.lo_power = probe_lo_power
+        if probe_mod_amp is not None:
+            self.mod_amp = probe_mod_amp
+        if probe_lo_power is not None:
+            self.lo_power = probe_lo_power
 
     def pre_run(self, sequence: Sequence):
         if not self.probe_freq or not self.mod_amp:
             raise ValueError("Probe parameters should be set first.")
 
-        # Lower sideband is kept, see IQ section of my thesis.
-        lo_freq = self.probe_freq + self.mod_freq
-        runtime.logger.info(f"Probe setup: LO freq {lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz.")
-        self.lo_dev.set_frequency_amplitude(lo_freq, self.lo_power)
+        # Upper sideband is kept, in accordance with Orkesh's calibration
+        mod_freq = self.probe_freq - self.lo_freq
+        runtime.logger.info(f"Probe setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {mod_freq/1e9} GHz.")
+        self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
         self.lo_dev.run()
 
-        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_amp)
+        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_freq, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
         mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
@@ -102,12 +105,13 @@ class IQModProbe(Procedure):
     def last_result(self):
         return self.result_amp, self.result_phase
 
-    def build_readout_waveform(self, prob_len, prob_mod_rel_amp):
+    def build_readout_waveform(self, prob_len, mod_freq, prob_mod_rel_amp):
         dc_waveform = waveform.DC(prob_len, 1) * prob_mod_rel_amp
 
-        IQ_waveform = waveform.CalibratedIQ(self.mod_freq,
+        IQ_waveform = waveform.CalibratedIQ(mod_freq,
                                             I_waveform=dc_waveform,
-                                            IQ_cali=self.mod_IQ_calibration)
+                                            IQ_cali=self.mod_IQ_calibration,
+                                            down_conversion=False) # Use up conversion
 
         return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
