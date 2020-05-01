@@ -93,7 +93,7 @@ class Sweep1DExperiment(Experiment):
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             filename = f"{self.name}_{timestamp}.txt"
             with open(filename, "w") as f:
-                header = f"{self.sweep_parameter_name}/f{self.sweep_parameter_unit} "
+                header = f"{self.sweep_parameter_name}/{self.sweep_parameter_unit} "
                 for i in range(len(self.result_names)):
                     header += f"{self.result_names[i]}/{self.result_units[i]} "
                 f.write(header + "\n")

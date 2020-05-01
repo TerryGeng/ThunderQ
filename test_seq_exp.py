@@ -54,7 +54,7 @@ class TestExperiment(Sweep1DExperiment):
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 
-        self.probe_procedure.repeat = 100
+        self.probe_procedure.repeat = 200
 
         self.add_procedure(self.probe_procedure)
 
@@ -93,8 +93,8 @@ class TestExperiment(Sweep1DExperiment):
 exp = TestExperiment()
 exp.sweep(
     parameter_name="probe_freq",
-    parameter_unit="GHz",
-    points=np.linspace(exp.center_probe_freq - 0.01e9, exp.center_probe_freq + 0.01e9, 100),
+    parameter_unit="Hz",
+    points=np.linspace(exp.center_probe_freq - 0.005e9, exp.center_probe_freq + 0.005e9, 100),
     result_name="result_amp",
     result_unit="arb."
 )
