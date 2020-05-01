@@ -77,9 +77,9 @@ class IQModProbe(Procedure):
         self.acquisition_dev.set_acquisition_params(length=self.readout_len,
                                                     repeats=self.repeat,
                                                     delay_after_trigger=0)
-        self.acquisition_dev.start_acquisition()
 
     def post_run(self):
+        self.acquisition_dev.start_acquisition()
         ch_I_datas, ch_Q_datas = self.acquisition_dev.fetch_data()
         I_amp_sum, I_phase_sum = 0, 0
         Q_amp_sum, Q_phase_sum = 0, 0

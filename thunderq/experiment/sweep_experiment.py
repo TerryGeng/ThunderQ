@@ -99,9 +99,9 @@ class Sweep1DExperiment(Experiment):
                 f.write(header + "\n")
 
                 for i in range(len(self.swept_points)):
-                    line = self.swept_points[i] + " "
+                    line = f"{self.swept_points[i]} "
                     for result in self.result_names:
-                        line += self.results[result][i] + " "
+                        line += f"{self.results[result][i]} "
                     f.write(line + "\n")
 
             runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
