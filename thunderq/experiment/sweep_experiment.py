@@ -1,3 +1,4 @@
+import time
 import threading
 from typing import Iterable
 from matplotlib.figure import Figure
@@ -32,6 +33,7 @@ class Sweep1DExperiment(Experiment):
         self.sweep_points = points
         if isinstance(result_name, str):
             self.result_names = [ result_name ]
+            self.result_plot_senders[result_name] = senders.PlotSender("Plot: " + result_name, id="plot_" + result_name)
             self.results[result_name] = []
             assert isinstance(result_unit, str)
             self.result_units = [ result_unit ]
