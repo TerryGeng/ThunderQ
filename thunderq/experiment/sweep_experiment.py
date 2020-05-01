@@ -96,13 +96,13 @@ class Sweep1DExperiment(Experiment):
                 header = f"{self.sweep_parameter_name}/f{self.sweep_parameter_unit} "
                 for i in range(len(self.result_names)):
                     header += f"{self.result_names[i]}/{self.result_units[i]} "
-                f.writeline(header)
+                f.write(header + "\n")
 
                 for i in range(len(self.swept_points)):
                     line = self.swept_points[i] + " "
                     for result in self.result_names:
                         line += self.results[result][i] + " "
-                    f.writeline(line)
+                    f.write(line + "\n")
 
             runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
 
@@ -114,7 +114,9 @@ class Sweep1DExperiment(Experiment):
             result_name = self.result_names[i]
             param_unit = self.sweep_parameter_unit
             result_unit = self.result_units[i]
-            ax.plot(self.swept_points, self.results[result_name], color=colors[ i % len(colors) ], marker='x')
+            ax.plot(self.swept_points, self.results[result_name], color=colors[ i % len(colors) ],
+                    marker='x', markersize=4, linewidth=1)
             ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
             ax.set_ylabel(f"{result_name} / {result_unit}")
+            fig.tight_layout()
             self.result_plot_senders[result_name].send(fig)
