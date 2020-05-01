@@ -54,7 +54,7 @@ class TestExperiment(Sweep1DExperiment):
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 
-        self.probe_procedure.repeat = 200
+        self.probe_procedure.repeat = 100
 
         self.add_procedure(self.probe_procedure)
 

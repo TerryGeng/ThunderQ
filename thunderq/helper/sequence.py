@@ -1,5 +1,8 @@
 import numpy as np
 from matplotlib.figure import Figure
+import matplotlib as mpl
+mpl.rcParams['font.size'] = 8
+mpl.rcParams['lines.linewidth'] = 1.0
 
 import thunderq.runtime as runtime
 from thunderq.driver.AWG import AWGChannel, AWG

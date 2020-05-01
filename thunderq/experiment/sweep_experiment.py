@@ -1,7 +1,11 @@
 import threading
 from typing import Iterable
 from matplotlib.figure import Figure
+import matplotlib as mpl
+mpl.rcParams['font.size'] = 8
+mpl.rcParams['lines.linewidth'] = 1.0
 
+import thunderq.runtime as runtime
 from thunderq.experiment import Experiment, run_wrapper
 from thunder_board import senders
 
@@ -15,8 +19,9 @@ class Sweep1DExperiment(Experiment):
         self.result_names = None
         self.result_units = None
         self.results = {}
-
-        self.plot_sender = senders.PlotSender("Plot: " + name, id="plot_" + name)
+        self.save_to_file = True
+        self.result_plot_senders = {}
+        self.time_start_at = 0
 
     def sweep(self, parameter_name: str=None, points: Iterable=None, result_name=None,
               parameter_unit: str='', result_unit=None):
@@ -33,6 +38,7 @@ class Sweep1DExperiment(Experiment):
         elif isinstance(result_name, list):
             self.result_names = result_name
             for result in result_name:
+                self.result_plot_senders[result] = senders.PlotSender("Plot: " + result, id="plot_" + result)
                 self.results[result] = []
             assert isinstance(result_unit, list)
             self.result_units = result_unit
@@ -47,14 +53,21 @@ class Sweep1DExperiment(Experiment):
 
     @run_wrapper
     def run(self):
-        for point in self.sweep_points:
+        self.time_start_at = time.time()
+        for i, point in enumerate(self.sweep_points):
+
+            if i > 0:
+                eta = int((time.time() - self.time_start_at) / i * (len(self.sweep_points) - i))
+            else:
+                eta = "?"
+
             setattr(self, self.sweep_parameter_name, point)
             if self.sweep_parameter_unit:
                 self.update_status(f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
-                                   f" at {point} {self.sweep_parameter_unit}")
+                                   f" at {point} {self.sweep_parameter_unit}, ETA: {eta} s")
             else:
                 self.update_status(f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
-                                   f" at {point} (unit unknown)")
+                                   f" at {point}, ETA: {eta} s")
 
             self.update_parameters()
             self.run_single_shot()
@@ -74,19 +87,32 @@ class Sweep1DExperiment(Experiment):
         raise NotImplementedError
 
     def process_data_post_exp(self):
-        raise NotImplementedError
+        if self.save_to_file:
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            filename = f"{self.name}_{timestamp}.txt"
+            with open(filename, "w") as f:
+                header = f"{self.sweep_parameter_name}/f{self.sweep_parameter_unit} "
+                for i in range(len(self.result_names)):
+                    header += f"{self.result_names[i]}/{self.result_units[i]} "
+                f.writeline(header)
+
+                for i in range(len(self.swept_points)):
+                    line = self.swept_points[i] + " "
+                    for result in self.result_names:
+                        line += self.results[result][i] + " "
+                    f.writeline(line)
+
+            runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
 
     def make_plot_and_send(self):
         colors = ["blue",  "crimson",  "orange", "forestgreen", "dodgerblue"]
-        fig = Figure(figsize=(5, 3))
-        axes = fig.subplots(1, len(self.result_names))
         for i in range(len(self.result_names)):
-            ax = axes[i] if len(self.result_names) > 1 else axes
+            fig = Figure(figsize=(5, 3))
+            ax = fig.subplots(1, len(self.result_names))
             result_name = self.result_names[i]
             param_unit = self.sweep_parameter_unit
             result_unit = self.result_units[i]
-            ax.plot(self.swept_points, self.results[result_name], color=colors[ i % len(colors) ])
+            ax.plot(self.swept_points, self.results[result_name], color=colors[ i % len(colors) ], marker='x')
             ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
             ax.set_ylabel(f"{result_name} / {result_unit}")
-        fig.tight_layout()
-        self.plot_sender.send(fig)
+            self.result_plot_senders[result_name].send(fig)
