@@ -4,10 +4,10 @@ from thunderq.helper.sequence import Sequence
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.driver.acqusition import AcquisitionDevice
 from thunderq.driver.ASG import ASG
-from thunderq.procedure import Procedure
+from thunderq.procedure import IQModulation
 import thunderq.runtime as runtime
 
-class IQModProbe(Procedure):
+class IQModProbe(IQModulation):
     def __init__(self,
                  probe_mod_slice_name: str,
                  probe_mod_I_name: str,
@@ -18,61 +18,24 @@ class IQModProbe(Procedure):
                  mod_IQ_calibration: IQCalibrationContainer = None
                  ):
 
-        super().__init__("IQ Mod Probe")
-        self.mod_slice = probe_mod_slice_name
-        self.mod_I_name = probe_mod_I_name
-        self.mod_Q_name = probe_mod_Q_name
-        self.lo_dev = probe_lo_dev
+        super().__init__(probe_mod_slice_name, probe_mod_I_name, probe_mod_Q_name, probe_lo_dev, mod_IQ_calibration)
+        self.name = "IQ Modulated Probe"
         self.acquisition_slice_name = acquisition_slice_name
         self.acquisition_dev = acquisition_dev
-
-        if not mod_IQ_calibration:
-            self.mod_IQ_calibration = IQCalibrationContainer()
-        else:
-            self.mod_IQ_calibration = mod_IQ_calibration
-
-        self.lo_freq = mod_IQ_calibration.lo_freq # Hz, the suggested value of current calibration
-        self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
-
-        self.mod_freq = 50e6  # Hz, will be overriden given a probe frequency
-        self.mod_amp = mod_IQ_calibration.mod_amp # V, the suggested value of current calibration
 
         self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
         self.readout_len = 1024
         self.repeat = 200
-
-        self.probe_freq = None
-        self.probe_mod_amp = None
+        self.after_mod_padding = 0
 
         self.result_amp = None
         self.result_phase = None
 
     def set_probe_params(self, probe_freq, probe_mod_amp=None, probe_lo_power=None):
-        self.probe_freq = probe_freq
-        if probe_mod_amp is not None:
-            self.mod_amp = probe_mod_amp
-        if probe_lo_power is not None:
-            self.lo_power = probe_lo_power
+        super().set_mod_params(probe_freq, self.probe_len, probe_mod_amp, probe_lo_power)
 
     def pre_run(self, sequence: Sequence):
-        if not self.probe_freq or not self.mod_amp:
-            raise ValueError("Probe parameters should be set first.")
-
-        # Upper sideband is kept, in accordance with Orkesh's calibration
-        self.mod_freq = self.probe_freq - self.lo_freq
-        runtime.logger.info(f"Probe setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
-        self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
-        self.lo_dev.run()
-
-        I_waveform, Q_waveform = self.build_readout_waveform(self.probe_len, self.mod_freq, self.mod_amp)
-
-        mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
-        mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
-        mod_slice.set_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
-        mod_slice.add_waveform(self.mod_I_name, I_waveform)
-        mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
-        mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
-        mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+        super().pre_run(sequence)
 
         self.acquisition_dev.set_acquisition_params(length=self.readout_len,
                                                     repeats=self.repeat,
@@ -104,16 +67,6 @@ class IQModProbe(Procedure):
 
     def last_result(self):
         return self.result_amp, self.result_phase
-
-    def build_readout_waveform(self, prob_len, mod_freq, prob_mod_rel_amp):
-        dc_waveform = waveform.DC(prob_len, 1) * prob_mod_rel_amp
-
-        IQ_waveform = waveform.CalibratedIQ(mod_freq,
-                                            I_waveform=dc_waveform,
-                                            IQ_cali=self.mod_IQ_calibration,
-                                            down_conversion=False) # Use up conversion
-
-        return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
     def get_amp_phase(self, freq, data, sample_rate=1e9):
         data_length = len(data)
