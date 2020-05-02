@@ -4,6 +4,7 @@ runtime_initialized = False
 thunderboard_enable = True
 logger: Logger = None
 experiment_status: ExperimentStatus = None
+env = None
 
 def runtime_initialize():
     global logger, experiment_status

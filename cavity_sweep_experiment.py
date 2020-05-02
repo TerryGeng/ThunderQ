@@ -15,7 +15,24 @@ import thunderq.runtime as runtime
 from thunder_board import senders
 
 
-class TestExperiment(Sweep1DExperiment):
+# Avoiding reinit, if this code is run by exec()
+
+try:
+    assert isinstance(runtime.env.prob_mod_dev, AWG_M3202A)
+    assert isinstance(runtime.env.trigger_dev, TriggerDG645)
+    assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
+    assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
+except (KeyError, AssertionError):
+    runtime.logger.info("Initializing M3202A...")
+    runtime.env.probe_mod_dev = AWG_M3202A(1, 3)
+    runtime.logger.info("Initializing DG645...")
+    runtime.env.trigger_dev = TriggerDG645()
+    runtime.logger.info("Initializing E8257C...")
+    runtime.env.probe_lo_dev = ASG_E8257C()
+    runtime.logger.info("Initializing ATS9870...")
+    runtime.env.acquisition_dev = Acquisition_ATS9870()
+
+class CavitySweepExperiment(Sweep1DExperiment):
     def __init__(self):
         super().__init__("Probe Experiment")
 
@@ -25,30 +42,15 @@ class TestExperiment(Sweep1DExperiment):
         # These are sweepable parameters. Will be update by update_parameters() each round.
         self.probe_freq = self.center_probe_freq
 
-        # It is always slow to load drivers. Be patient.
-        runtime.logger.info("Initializing M3202A...")
-        self.probe_mod_dev = AWG_M3202A(1, 3)
-        runtime.logger.info("Done.")
-
-        runtime.logger.info("Initializing DG645...")
-        self.sequence = Sequence(TriggerDG645(), 5000)
-        runtime.logger.info("Done.")
-
-        runtime.logger.info("Initializing E8257C...")
-        self.probe_lo_dev = ASG_E8257C()
-        runtime.logger.info("Done.")
-
-        runtime.logger.info("Initializing ATS9870...")
-        self.acquisition_dev = Acquisition_ATS9870()
-        runtime.logger.info("Done.")
+        self.sequence = Sequence(runtime.env.trigger_dev, 5000)
 
         self.probe_procedure = IQModProbe(
             probe_mod_slice_name="probe_mod",
             probe_mod_I_name="probe_mod_I",
             probe_mod_Q_name="probe_mod_Q",
-            probe_lo_dev=self.probe_lo_dev,
+            probe_lo_dev=runtime.env.probe_lo_dev,
             acquisition_slice_name="acquisition",
-            acquisition_dev=self.acquisition_dev,
+            acquisition_dev=runtime.env.acquisition_dev,
             mod_IQ_calibration=read_IQ_calibrate_file(
                 "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
@@ -70,8 +72,8 @@ class TestExperiment(Sweep1DExperiment):
         self.sequence.add_slice("drive_mod", trigger_line="T0", start_from=0, duration=100e-6)
 
         self.sequence.add_slice("probe_mod", trigger_line="AB", start_from=100e-6, duration=4e-6) \
-            .add_AWG_channel(AWGChannel("probe_mod_I", self.probe_mod_dev, 1)) \
-            .add_AWG_channel(AWGChannel("probe_mod_Q", self.probe_mod_dev, 2))
+            .add_AWG_channel(AWGChannel("probe_mod_I", runtime.env.probe_mod_dev, 1)) \
+            .add_AWG_channel(AWGChannel("probe_mod_Q", runtime.env.probe_mod_dev, 2))
 
         self.sequence.add_slice("probe_lo", trigger_line="CD", start_from=100e-6, duration=4e-6)
         self.sequence.add_slice("acquisition", trigger_line="EF", start_from=101e-6, duration=4e-6)
@@ -90,11 +92,11 @@ class TestExperiment(Sweep1DExperiment):
             self.sequence_sent = True
 
 
-exp = TestExperiment()
-exp.sweep(
+cavity_exp = CavitySweepExperiment()
+cavity_exp.sweep(
     parameter_name="probe_freq",
     parameter_unit="Hz",
-    points=np.linspace(exp.center_probe_freq - 0.005e9, exp.center_probe_freq + 0.005e9, 100),
+    points=np.linspace(cavity_exp.center_probe_freq - 0.005e9, cavity_exp.center_probe_freq + 0.005e9, 100),
     result_name="result_amp",
     result_unit="arb."
 )

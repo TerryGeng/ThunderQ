@@ -41,7 +41,7 @@ def read_IQ_calibrate_file(filename):
 
     lo_freq = float(_dict['src_power_freq']) * 1e9 # TODO: this is a typo, check and see if it is fixed the next time.
     Q_time_offset = float(_dict['Q_time_offset'])/1e9
-    Q_phase = 2*math.pi*( - 0.005) * Q_time_offset +  float(_dict['Q_phase']) # TODO: ?????? Ask Orkesh
+    Q_phase = 2*math.pi*(-0.005e9) * Q_time_offset +  float(_dict['Q_phase']) # TODO: ?????? Ask Orkesh
 
     I_amp_factor = math.sin(float(_dict['change_mod_power_angle']))
     Q_amp_factor = math.cos(float(_dict['change_mod_power_angle']))
