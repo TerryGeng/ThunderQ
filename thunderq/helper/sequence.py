@@ -39,6 +39,11 @@ class Sequence:
                 self.AWG_waveforms[channel_name] = \
                     self.AWG_waveforms[channel_name].concat(waveform)
 
+        def clear_waveforms(self):
+            for channel_name, channel in self.AWG_channels.items():
+                self.AWG_waveforms[channel_name] = None
+                self.AWG_channels[channel_name].set_offset(0)
+
         def set_offset(self, channel_name, offset_volts):
             self.AWG_channels[channel_name].set_offset(offset_volts)
 
@@ -87,6 +92,10 @@ class Sequence:
 
         return self.slices[name]
 
+    def clear_waveforms(self):
+        for slice in self.slices.values():
+            slice.clear_waveforms()
+
     def setup(self):
         self.setup_trigger()
         self.setup_AWG()
@@ -98,7 +107,6 @@ class Sequence:
             self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, slice.duration)
 
     def setup_AWG(self):
-        self.trigger_device.set_cycle_frequency(self.cycle_frequency)
         for slice in self.slices.values():
           slice.setup_AWG()
 

@@ -4,11 +4,8 @@ import threading
 from lockfile import LockFile
 
 import thunderq.runtime as runtime
-from thunderq.env import Env
 
 lock = LockFile("env_lock")
-
-runtime.env = Env()
 
 script_queue = []
 

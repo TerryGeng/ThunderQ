@@ -22,6 +22,7 @@ try:
     assert isinstance(runtime.env.trigger_dev, TriggerDG645)
     assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
     assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
+    assert isinstance(runtime.env.sequence, Sequence)
 except (KeyError, AssertionError):
     runtime.logger.info("Initializing M3202A...")
     runtime.env.probe_mod_dev = AWG_M3202A(1, 3)
@@ -31,6 +32,19 @@ except (KeyError, AssertionError):
     runtime.env.probe_lo_dev = ASG_E8257C()
     runtime.logger.info("Initializing ATS9870...")
     runtime.env.acquisition_dev = Acquisition_ATS9870()
+
+    runtime.logger.info("Initializing sequence...")
+    runtime.env.sequence.add_slice("drive_mod", trigger_line="T0", start_from=0, duration=100e-6)
+
+    runtime.env.sequence.add_slice("probe_mod", trigger_line="AB", start_from=100e-6, duration=4e-6) \
+        .add_AWG_channel(AWGChannel("probe_mod_I", runtime.env.probe_mod_dev, 1)) \
+        .add_AWG_channel(AWGChannel("probe_mod_Q", runtime.env.probe_mod_dev, 2))
+
+    runtime.env.sequence.add_slice("probe_lo", trigger_line="CD", start_from=100e-6, duration=4e-6)
+    runtime.env.sequence.add_slice("acquisition", trigger_line="EF", start_from=101e-6, duration=4e-6)
+
+    runtime.logger.success("Device and sequence are all initialized.")
+
 
 class CavitySweepExperiment(Sweep1DExperiment):
     def __init__(self):
@@ -67,17 +81,7 @@ class CavitySweepExperiment(Sweep1DExperiment):
         self.sequence_sender = senders.PlotSender("Pulse Sequence", id="pulse sequence")
         self.sequence_sent = False
 
-    def initialize_sequence(self):
-        runtime.logger.log("Initializing sequence...")
-        self.sequence.add_slice("drive_mod", trigger_line="T0", start_from=0, duration=100e-6)
-
-        self.sequence.add_slice("probe_mod", trigger_line="AB", start_from=100e-6, duration=4e-6) \
-            .add_AWG_channel(AWGChannel("probe_mod_I", runtime.env.probe_mod_dev, 1)) \
-            .add_AWG_channel(AWGChannel("probe_mod_Q", runtime.env.probe_mod_dev, 2))
-
-        self.sequence.add_slice("probe_lo", trigger_line="CD", start_from=100e-6, duration=4e-6)
-        self.sequence.add_slice("acquisition", trigger_line="EF", start_from=101e-6, duration=4e-6)
-        runtime.logger.log("Done")
+        self.sequence = runtime.env.sequence
 
     def update_parameters(self):
         self.probe_procedure.set_probe_params(self.probe_freq)
@@ -85,8 +89,8 @@ class CavitySweepExperiment(Sweep1DExperiment):
     def retrieve_data(self):
         self.result_amp, self.result_phase = self.probe_procedure.last_result()
 
-    def update_sequence(self):
-        super().update_sequence()
+    def run_sequence(self):
+        super().run_sequence()
         if not self.sequence_sent:
             self.sequence_sender.send(self.sequence.plot())
             self.sequence_sent = True

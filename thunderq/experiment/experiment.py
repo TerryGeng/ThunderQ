@@ -17,10 +17,7 @@ class Experiment:
         self.sequence_initialized = False
         self.trigger_initialized = False
 
-    def initialize_sequence(self):
-        raise NotImplementedError
-
-    def update_sequence(self):
+    def run_sequence(self):
         if not self.trigger_initialized:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
@@ -33,26 +30,25 @@ class Experiment:
     def clear_procedures(self):
         self.procedures.clear()
 
-#    @run_wrapper
-    def run(self):
-        raise NotImplementedError
-
     def run_single_shot(self):
-        if not self.sequence_initialized:
-            self.sequence_initialized = True
-            self.initialize_sequence()
+        self.sequence.clear_waveforms()
 
         for procedure in self.procedures:
             assert isinstance(procedure, Procedure)
             procedure.pre_run(self.sequence)
 
-        self.update_sequence()
+        self.run_sequence()
 
         for procedure in self.procedures:
             procedure.post_run()
 
     def update_status(self, msg):
         runtime.experiment_status.update_status(msg)
+
+    #@run_wrapper
+    def run(self):
+        raise NotImplementedError
+
 
 
 def run_wrapper(run_func):
