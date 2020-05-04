@@ -125,11 +125,11 @@ class Sequence:
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure(figsize=(16, len(self.slices) * 2))
+        fig = Figure(figsize=(8, len(self.slices) * 1))
         ax = fig.subplots(1, 1)
 
         # take years to run this line
-        #fig.tight_layout()
+        fig.tight_layout()
 
         for spine in ["left", "top", "right"]:
             ax.spines[spine].set_visible(False)
@@ -151,9 +151,10 @@ class Sequence:
                     if waveform and (slice.start_from < sample_points[t] < slice.start_from + slice.duration):
                         y[t] = waveform.at(sample_points[t] - slice.start_from)
                     else:
-                        y[t] = 0
+                        y[t] = 0 + height
 
-                y = (y - y.min()) / (y.max() - y.min()) + height
+                if y.max() - y.min() != 0:
+                    y = (y - y.min()) / (y.max() - y.min()) + height
                 ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
                 ax.annotate(channel_name, xy=(text_x, height + 0.5), fontsize=9, ha="right", va="center", fontstyle="italic")
                 height += 1.5

@@ -110,7 +110,7 @@ class Sweep1DExperiment(Experiment):
     def make_plot_and_send(self):
         colors = ["blue",  "crimson",  "orange", "forestgreen", "dodgerblue"]
         for i in range(len(self.result_names)):
-            fig = Figure(figsize=(5, 3))
+            fig = Figure(figsize=(8, 4))
             ax = fig.subplots(1, len(self.result_names))
             result_name = self.result_names[i]
             param_unit = self.sweep_parameter_unit
