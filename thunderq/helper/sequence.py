@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib.figure import Figure
 import matplotlib as mpl
-mpl.rcParams['font.size'] = 8
+mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
 import thunderq.runtime as runtime
@@ -21,7 +21,7 @@ class Sequence:
             self.start_from = start_from
             self.duration = duration
             self.need_setup = need_setup_trigger_dev
-            self.AWG_channels = {}
+            self.AWG = {}
             self.AWG_waveforms = {}
 
         def add_AWG_channel(self, channel: AWGChannel, channel_name=None):
@@ -135,7 +135,7 @@ class Sequence:
             ax.spines[spine].set_visible(False)
 
         ax.yaxis.set_visible(False)
-        ax.set_xlim(-plot_sample_points[-1]/10, plot_sample_points[-1])
+        ax.set_xlim(-plot_sample_points[-1]/6, plot_sample_points[-1])
         ax.set_xlabel("Time / us")
         text_x = -plot_sample_points[-1]/30
 

@@ -1,9 +1,10 @@
+import os
 import time
 import threading
 from typing import Iterable
 from matplotlib.figure import Figure
 import matplotlib as mpl
-mpl.rcParams['font.size'] = 8
+mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
 import thunderq.runtime as runtime
@@ -21,6 +22,7 @@ class Sweep1DExperiment(Experiment):
         self.result_units = None
         self.results = {}
         self.save_to_file = True
+        self.save_path = 'data'
         self.result_plot_senders = {}
         self.time_start_at = 0
 
@@ -91,8 +93,13 @@ class Sweep1DExperiment(Experiment):
 
     def process_data_post_exp(self):
         if self.save_to_file:
+            if os.path.isdir(self.save_path):
+                os.makedirs(self.save_path)
+
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            filename = f"{self.name}_{timestamp}.txt"
+            filename = f"{self.save_path}{self.name}_{timestamp}.txt" if self.save_path[-1] == '/' \
+                else f"{self.save_path}/{self.name}_{timestamp}.txt"
+
             with open(filename, "w") as f:
                 header = f"{self.sweep_parameter_name}/{self.sweep_parameter_unit} "
                 for i in range(len(self.result_names)):
