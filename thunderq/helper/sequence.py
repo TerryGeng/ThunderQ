@@ -64,15 +64,17 @@ class Sequence:
 
         def setup_AWG(self):
             for channel_name, channel in self.AWG_channels.items():
-                if abs(self.AWG_waveforms[channel_name].width - self.duration) > 1e-9:
-                    runtime.logger.warning(f"Sequence Slice {self.name}:"
-                                           f" waveform width {self.AWG_waveforms[channel_name].width}s"
-                                           f" not equals to slice duration {self.duration}s.")
-                channel.write_waveform(self.AWG_waveforms[channel_name])
+                if self.AWG_waveforms[channel_name]:
+                    if abs(self.AWG_waveforms[channel_name].width - self.duration) > 1e-9:
+                        runtime.logger.warning(f"Sequence Slice {self.name}:"
+                                               f" waveform width {self.AWG_waveforms[channel_name].width}s"
+                                               f" not equals to slice duration {self.duration}s.")
+                    channel.write_waveform(self.AWG_waveforms[channel_name])
 
         def run_AWG(self):
             for channel_name, channel in self.AWG_channels.items():
-                channel.run()
+                if self.AWG_waveforms[channel_name]:
+                    channel.run()
 
     def __init__(self, trigger_device: TriggerDevice, cycle_frequency, trigger_width=4e-6):
         self.cycle_frequency = cycle_frequency
@@ -146,7 +148,7 @@ class Sequence:
             for channel_name, waveform in slice.AWG_waveforms.items():
                 y = np.zeros(len(sample_points))
                 for t in range(len(sample_points)):
-                    if slice.start_from < sample_points[t] < slice.start_from + slice.duration:
+                    if waveform and (slice.start_from < sample_points[t] < slice.start_from + slice.duration):
                         y[t] = waveform.at(sample_points[t] - slice.start_from)
                     else:
                         y[t] = 0

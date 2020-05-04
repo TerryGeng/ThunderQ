@@ -1,35 +1,35 @@
+# Avoiding reinit, if this code is run by exec()
+from thunderq.experiment import Sweep1DExperiment
 import numpy as np
 
-from thunderq.experiment import Sweep1DExperiment
-from thunderq.helper.sequence import Sequence
-from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
-from thunderq.driver.AWG import AWG_M3202A
-from thunderq.driver.ASG import ASG_E8257C
-from thunderq.driver.acqusition import Acquisition_ATS9870
-from thunderq.driver.trigger import TriggerDG645
-from thunderq.procedure import IQModProbe
-import thunderq.runtime as runtime
-from thunder_board.clients import PlotClient
-
-
-# Avoiding reinit, if this code is run by exec()
-
-assert isinstance(runtime.env.prob_mod_dev, AWG_M3202A)
-assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
-assert isinstance(runtime.env.sequence, Sequence)
 
 class CavitySweepExperiment(Sweep1DExperiment):
     def __init__(self):
         super().__init__("Probe Experiment")
+
+        import numpy as np
+        from thunderq.helper.sequence import Sequence
+        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
+        from thunderq.driver.AWG import AWG_M3202A
+        from thunderq.driver.ASG import ASG_E8257C
+        from thunderq.driver.acqusition import Acquisition_ATS9870
+        from thunderq.driver.trigger import TriggerDG645
+        from thunderq.procedure import IQModProbe
+        import thunderq.runtime as runtime
+        from thunder_board.clients import PlotClient
+
+        assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
+        assert isinstance(runtime.env.trigger_dev, TriggerDG645)
+        assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
+        assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
+        assert isinstance(runtime.env.sequence, Sequence)
 
         self.center_probe_freq = 7.0645e9
 
         # These are sweepable parameters. Will be update by update_parameters() each round.
         self.probe_freq = self.center_probe_freq
 
-        self.sequence = Sequence(runtime.env.trigger_dev, 5000)
+        self.sequence = runtime.env.sequence
 
         self.probe_procedure = IQModProbe(
             probe_mod_slice_name="probe_mod",

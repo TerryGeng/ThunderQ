@@ -28,6 +28,7 @@ runtime.env.probe_lo_dev = ASG_E8257C()
 runtime.logger.info("Initializing ATS9870...")
 runtime.env.acquisition_dev = Acquisition_ATS9870()
 
+runtime.env.sequence = Sequence(runtime.env.trigger_dev, 5000)
 runtime.logger.info("Initializing sequence...")
 runtime.env.sequence.add_slice("drive_mod", trigger_line="T0", start_from=0, duration=100e-6) \
     .add_AWG_channel(AWGChannel("drive_mod_I", runtime.env.drive_mod_dev, 1)) \
