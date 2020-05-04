@@ -1,11 +1,11 @@
 import time
 
-from thunder_board import senders
+from thunder_board import clients
 
 class Logger:
     def __init__(self, thunderboard=True):
         if thunderboard:
-            self.log_sender = senders.TextSender("Log", id="log", rotate=True)
+            self.log_sender = clients.TextClient("Log", id="log", rotate=True)
         else:
             self.log_sender = None
 
@@ -52,7 +52,7 @@ class Logger:
 class ExperimentStatus:
     def __init__(self, thunderboard=True):
         if thunderboard:
-            self.status_sender = senders.TextSender("Experiment Status", id="status", rotate=False)
+            self.status_sender = clients.TextClient("Experiment Status", id="status", rotate=False)
         else:
             self.status_sender = None
 

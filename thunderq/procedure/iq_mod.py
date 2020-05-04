@@ -40,9 +40,9 @@ class IQModulation(Procedure):
         # self.mod_amp = 0.3  # V
 
         self.mod_len = 4096 * 1e-9  # The length of mod waveform, in sec.
-        self.after_mod_padding = 1e-6  # Length of idle time after drive waveform, before probe signal.
+        self.after_mod_padding = 2e-6  # Length of idle time after drive waveform, before probe signal.
 
-    def set_mod_params(self, target_freq=None, mod_len=None, mod_amp=None, lo_power=None):
+    def set_mod_params(self, target_freq=None, mod_len=None, mod_amp=None, lo_power=None, lo_freq=None):
         if target_freq:
             self.target_freq = target_freq
         if mod_len:
@@ -51,14 +51,19 @@ class IQModulation(Procedure):
             self.drive_mod_amp = mod_amp
         if lo_power:
             self.lo_power = lo_power
+        if lo_freq:
+            self.lo_freq = lo_freq
 
-    def build_drive_waveform(self, drive_len, mod_freq, drive_mod_rel_amp, padding):
-        dc_waveform = waveform.DC(drive_len, 1) * drive_mod_rel_amp
+    def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp, padding):
+        dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
-        IQ_waveform = waveform.CalibratedIQ(mod_freq,
-                                            I_waveform=dc_waveform,
-                                            IQ_cali=self.mod_IQ_calibration,
-                                            down_conversion=False) # Use up conversion
+        if mod_freq != .0:
+            IQ_waveform = waveform.CalibratedIQ(mod_freq,
+                                                I_waveform=dc_waveform,
+                                                IQ_cali=self.mod_IQ_calibration,
+                                                down_conversion=False) # Use up conversion
+        else:
+            IQ_waveform = waveform.DC(drive_len, drive_mod_amp)
 
         return waveform.Real(IQ_waveform).concat(waveform.Blank(padding)), \
                waveform.Imag(IQ_waveform).concat(waveform.Blank(padding))

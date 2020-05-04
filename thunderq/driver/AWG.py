@@ -70,9 +70,14 @@ class AWG_M3202A(AWG):
 
     def write_waveform(self, channel, waveform: WaveForm):
         sd_wave = SD_Wave()
-        wave_data = waveform.sample(self.sample_rate, min_unit=16)
+        wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
+
+        if amplitude > 1.5:
+            raise ValueError(f"Waveform Amplitude Too Large! {amplitude}V is given, while the maximum for M3202A is 1.5V.")
+
         sd_wave.newFromArrayDouble(SD_WaveformTypes.WAVE_ANALOG, wave_data)
         self.dev.waveformLoad(sd_wave, waveformNumber=channel)
+        self.dev.channelAmplitude(channel, amplitude)
         self.dev.AWGqueueWaveform(channel,
                                   waveformNumber=channel,
                                   triggerMode=SD_TriggerModes.EXTTRIG,

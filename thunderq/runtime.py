@@ -1,5 +1,14 @@
 from thunderq.helper.logger import Logger, ExperimentStatus
-from thunderq.env import Env
+
+class Env(dict):
+    def __init__(self):
+        super().__init__()
+
+    def __getattr__(self, attr):
+        return self[attr]
+
+    def __setattr__(self, attr, value):
+        self[attr] = value
 
 runtime_initialized = False
 thunderboard_enable = True

@@ -31,8 +31,6 @@ class Experiment:
         self.procedures.clear()
 
     def run_single_shot(self):
-        self.sequence.clear_waveforms()
-
         for procedure in self.procedures:
             assert isinstance(procedure, Procedure)
             procedure.pre_run(self.sequence)

@@ -8,7 +8,7 @@ mpl.rcParams['lines.linewidth'] = 1.0
 
 import thunderq.runtime as runtime
 from thunderq.experiment import Experiment, run_wrapper
-from thunder_board import senders
+from thunder_board.clients import PlotClient
 
 class Sweep1DExperiment(Experiment):
     def __init__(self, name):
@@ -33,14 +33,14 @@ class Sweep1DExperiment(Experiment):
         self.sweep_points = points
         if isinstance(result_name, str):
             self.result_names = [ result_name ]
-            self.result_plot_senders[result_name] = senders.PlotSender("Plot: " + result_name, id="plot_" + result_name)
+            self.result_plot_senders[result_name] = PlotClient("Plot: " + result_name, id="plot_" + result_name)
             self.results[result_name] = []
             assert isinstance(result_unit, str)
             self.result_units = [ result_unit ]
         elif isinstance(result_name, list):
             self.result_names = result_name
             for result in result_name:
-                self.result_plot_senders[result] = senders.PlotSender("Plot: " + result, id="plot_" + result)
+                self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
                 self.results[result] = []
             assert isinstance(result_unit, list)
             self.result_units = result_unit
@@ -80,6 +80,7 @@ class Sweep1DExperiment(Experiment):
                 self.results[result].append(getattr(self, result))
 
             threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
+        self.sequence.clear_waveforms()
         self.process_data_post_exp()
 
     def update_parameters(self):

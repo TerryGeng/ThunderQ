@@ -18,8 +18,8 @@ class IQModDrive(IQModulation):
         super().__init__(drive_mod_slice_name, drive_mod_I_name, drive_mod_Q_name, drive_lo_dev, mod_IQ_calibration)
         self.name = "IQ Modulated Drive"
 
-        self.after_mod_padding = 1e-6
+        self.after_mod_padding = 2e-6
 
-    def set_drive_params(self, drive_freq, drive_len=None, drive_mod_amp=None, drive_lo_power=None):
-        super().set_mod_params(drive_freq, drive_len, drive_mod_amp, drive_lo_power)
+    def set_drive_params(self, drive_freq=None, drive_len=None, drive_mod_amp=None, drive_lo_power=None, drive_lo_freq=None):
+        super().set_mod_params(drive_freq, drive_len, drive_mod_amp, drive_lo_power, drive_lo_freq)
 

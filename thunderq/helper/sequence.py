@@ -15,11 +15,12 @@ class Sequence:
     PADDING_BEHIND = 1
 
     class Slice:
-        def __init__(self, name, trigger_line, start_from, duration):
+        def __init__(self, name, trigger_line, start_from, duration, need_setup_trigger_dev=True):
             self.name = name
             self.trigger_line = trigger_line
             self.start_from = start_from
             self.duration = duration
+            self.need_setup = need_setup_trigger_dev
             self.AWG_channels = {}
             self.AWG_waveforms = {}
 
@@ -73,13 +74,14 @@ class Sequence:
             for channel_name, channel in self.AWG_channels.items():
                 channel.run()
 
-    def __init__(self, trigger_device: TriggerDevice, cycle_frequency):
+    def __init__(self, trigger_device: TriggerDevice, cycle_frequency, trigger_width=4e-6):
         self.cycle_frequency = cycle_frequency
         self.trigger_device = trigger_device
+        self.trigger_width = trigger_width
         self.slices = {}
         pass
 
-    def add_slice(self, name, trigger_line, start_from, duration) -> Slice:
+    def add_slice(self, name, trigger_line, start_from, duration, need_setup_trigger_dev=True) -> Slice:
         # add_slice("drive", "drive", "T0", None, 100e-6)
         # add_slice("drive", "probe_mod", "AB", 100e-6, 4e-6)
         # add_slice("drive", "probe_src", "CD", 100e-6, 4e-6)
@@ -88,7 +90,7 @@ class Sequence:
             raise ValueError(f"Out of range. Your slice ends at {start_from + duration}s, "
                              f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
 
-        self.slices[name] = Sequence.Slice(name, trigger_line, start_from, duration)
+        self.slices[name] = Sequence.Slice(name, trigger_line, start_from, duration, need_setup_trigger_dev)
 
         return self.slices[name]
 
@@ -104,7 +106,8 @@ class Sequence:
         self.trigger_device.set_cycle_frequency(self.cycle_frequency)
         for slice in self.slices.values():
             assert isinstance(slice, Sequence.Slice)
-            self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, slice.duration)
+            if slice.need_setup:
+                self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, self.trigger_width)
 
     def setup_AWG(self):
         for slice in self.slices.values():
@@ -120,7 +123,7 @@ class Sequence:
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure(figsize=(8, len(self.slices) * 1))
+        fig = Figure(figsize=(16, len(self.slices) * 2))
         ax = fig.subplots(1, 1)
 
         # take years to run this line
@@ -156,7 +159,7 @@ class Sequence:
 
             y = np.zeros(len(sample_points))
             for t in range(len(sample_points)):
-                if slice.start_from < sample_points[t] < slice.start_from + slice.duration:
+                if slice.start_from < sample_points[t] < slice.start_from + self.trigger_width:
                     y[t] = height + 1
                 else:
                     y[t] = height

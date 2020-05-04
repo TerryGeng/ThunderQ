@@ -1,6 +1,6 @@
 import path_to_devices
 import E8257C
-import SGS993
+import SGS993_MOD1
 
 ## Analog Signal Generator
 class ASG:
@@ -38,7 +38,7 @@ class ASG_E8257C(ASG):
 class ASG_SGS993(ASG):
     def __init__(self):
         super().__init__("SGS993")
-        self.dev = SGS993.DEVICE()
+        self.dev = SGS993_MOD1.DEVICE()
         self.dev.basic_setup()
         self.dev.RFOFF()
         self.dev.setFreqAmp(5.0e9, 10) # safe default value

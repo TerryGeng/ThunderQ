@@ -9,6 +9,8 @@
 #     unnecessary confusion. Therefore, I avoided overloading "+", "-" for this reason.
 #
 
+# TODO: what is the amplitude? relative amplitude? volts? how to process them?
+
 import numpy as np
 from .iq_calibration_container import IQCalibrationContainer
 
@@ -20,7 +22,7 @@ class WaveForm:
     def at(self, time):
         raise NotImplementedError
 
-    def sample(self, sample_rate, min_unit=16):
+    def direct_sample(self, sample_rate, min_unit=16):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
         padding = []
         if len(sample_points) % min_unit != 0:
@@ -30,6 +32,23 @@ class WaveForm:
         data = np.array([self.at(sample_point) for sample_point in sample_points] + padding)
 
         return data
+
+    def normalized_sample(self, sample_rate, min_unit=16):
+        sample_points = np.arange(0, self.width, 1.0 / sample_rate)
+        padding_len = 0
+        if len(sample_points) % min_unit != 0:
+            padding_len = min_unit - (len(sample_points) % min_unit)
+
+        max_abs = 0
+        data = np.zeros(len(sample_points) + padding_len)
+        for i, sample_point in enumerate(sample_points):
+            data[i] = self.at(sample_point)
+            if abs(data[i]) > max_abs:
+                max_abs = abs(data[i])
+
+        data = data / max_abs # Normalize
+
+        return data, max_abs
 
     def concat(self, waveform):
         return Sequence(self, waveform)
@@ -230,6 +249,7 @@ class CalibratedIQ(WaveForm):
             IQ_waveform = SumWave(I_waveform, Q_waveform * 1j)
 
         self.width = IQ_waveform.width
+        self.amplitude = IQ_waveform.amplitude
 
         if down_conversion:
             self.carry_IQ = IQ_waveform * SumWave(Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * 1j)

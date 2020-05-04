@@ -7,7 +7,7 @@ from thunderq.driver.AWG import AWG_M3202A
 from thunderq.driver.ASG import ASG_E8257C
 from thunderq.driver.acqusition import Acquisition_ATS9870
 from thunderq.driver.trigger import TriggerDG645
-from thunderq.procedure import IQModProbe
+from thunderq.procedure import IQModProbe, IQModDrive
 import thunderq.runtime as runtime
 from thunder_board.clients import PlotClient
 
@@ -20,16 +20,28 @@ assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
 assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
 assert isinstance(runtime.env.sequence, Sequence)
 
-class CavitySweepExperiment(Sweep1DExperiment):
+class RabiExperiment(Sweep1DExperiment):
     def __init__(self):
-        super().__init__("Probe Experiment")
+        super().__init__("Rabi Experiment")
 
-        self.center_probe_freq = 7.0645e9
-
-        # These are sweepable parameters. Will be update by update_parameters() each round.
-        self.probe_freq = self.center_probe_freq
+        self.drive_len = 0
+        self.drive_amp = 0.3 * 1.4  # Volts
+        self.drive_lo_power = 7.5  # dBm
+        self.drive_freq = 5.797e9  # Hz
+        self.drive_lo_freq = self.drive_freq # Hz
+        self.probe_freq = 7.0645e9  # Hz
 
         self.sequence = Sequence(runtime.env.trigger_dev, 5000)
+
+        self.drive_procedure = IQModDrive(
+            drive_mod_slice_name="drive_mod",
+            drive_mod_I_name="drive_mod_I",
+            drive_mod_Q_name="drive_mod_Q",
+            drive_lo_dev=runtime.env.drive_lo_dev,
+            mod_IQ_calibration=None
+        )
+
+        self.add_procedure(self.drive_procedure)
 
         self.probe_procedure = IQModProbe(
             probe_mod_slice_name="probe_mod",
@@ -44,7 +56,7 @@ class CavitySweepExperiment(Sweep1DExperiment):
         )
 
         self.probe_procedure.repeat = 200
-
+        self.probe_procedure.set_probe_params(self.probe_freq)
         self.add_procedure(self.probe_procedure)
 
         # Realtime result
@@ -57,7 +69,11 @@ class CavitySweepExperiment(Sweep1DExperiment):
         self.sequence = runtime.env.sequence
 
     def update_parameters(self):
-        self.probe_procedure.set_probe_params(self.probe_freq)
+        self.drive_procedure.set_drive_params(self.drive_freq,
+                                              self.drive_len,
+                                              self.drive_amp,
+                                              self.drive_lo_power,
+                                              self.drive_lo_freq)
 
     def retrieve_data(self):
         self.result_amp, self.result_phase = self.probe_procedure.last_result()
