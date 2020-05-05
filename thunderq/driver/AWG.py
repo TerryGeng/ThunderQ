@@ -39,7 +39,10 @@ class AWGChannel:
         self.AWG.set_channel_offset(self.channel, offset_voltage)
 
     def run(self):
-        self.AWG.run()
+        self.AWG.run(self.channel)
+
+    def stop(self):
+        self.AWG.stop(self.channel)
 
 
 class AWG_M3202A(AWG):
@@ -63,11 +66,6 @@ class AWG_M3202A(AWG):
                                               SD_TriggerBehaviors.TRIGGER_RISE)
             self.dev.AWGqueueConfig(ch, 1)  # Set queue mode to Cyclic(1)
 
-    def stop(self):
-        for ch in [1, 2, 3, 4]:
-            self.dev.AWGstop(ch)
-            self.dev.AWGflush(ch)
-
     def write_waveform(self, channel, waveform: WaveForm):
         sd_wave = SD_Wave()
         wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
@@ -88,9 +86,21 @@ class AWG_M3202A(AWG):
     def set_channel_offset(self, channel, offset_voltage):
         self.dev.channelOffset(channel, offset_voltage)
 
-    def run(self):
-        for ch in [1, 2, 3, 4]:
-            self.dev.AWGstart(ch)
+    def run(self, channel=None):
+        if not channel:
+            for ch in [1, 2, 3, 4]:
+                self.dev.AWGstart(ch)
+        else:
+            self.dev.AWGstart(channel)
+
+    def stop(self, channel=None):
+        if not channel:
+            for ch in [1, 2, 3, 4]:
+                self.dev.AWGstop(ch)
+                self.dev.AWGflush(ch)
+        else:
+            self.dev.AWGstop(channel)
+            self.dev.AWGflush(channel)
 
     def set_channel_amp(self, ch, amp):
         self.dev.channelAmplitude(ch, amp)

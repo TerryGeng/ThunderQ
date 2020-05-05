@@ -22,7 +22,7 @@ class Experiment:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
         self.sequence.setup_AWG()
-        self.sequence.run()
+        self.sequence.run_AWG()
 
     def add_procedure(self, procedure: Procedure):
         self.procedures.append(procedure)

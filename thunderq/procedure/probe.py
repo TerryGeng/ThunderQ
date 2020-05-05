@@ -26,7 +26,6 @@ class IQModProbe(IQModulation):
         self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
         self.readout_len = 1024
         self.repeat = 200
-        self.after_mod_padding = 0
 
         self.result_amp = None
         self.result_phase = None

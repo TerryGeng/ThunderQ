@@ -14,24 +14,28 @@ class Sequence:
     PADDING_BEFORE = 0
     PADDING_BEHIND = 1
 
-    class Slice:
-        def __init__(self, name, trigger_line, start_from, duration, need_setup_trigger_dev=True):
+    class Trigger:
+        def __init__(self, name, trigger_channel, raise_at, drop_after=4e-6, sequence=None):
             self.name = name
-            self.trigger_line = trigger_line
+            self.trigger_channel = trigger_channel
+            self.raise_at = raise_at
+            self.drop_after = drop_after
+            self.sequence = sequence
+            self.linked_AWG_channels = []
+
+        def link_AWG_channel(self, channel):
+            self.linked_AWG_channels.append(channel)
+            self.sequence.AWG_channel_to_trigger[channel.name] = self
+            return self
+
+    class Slice:
+        # padding_position is one of Sequence.PADDING_BEFORE and Sequence.PADDING_BEHIND
+        def __init__(self, name, start_from, duration):
+            self.name = name
             self.start_from = start_from
             self.duration = duration
-            self.need_setup = need_setup_trigger_dev
-            self.AWG = {}
             self.AWG_waveforms = {}
-
-        def add_AWG_channel(self, channel: AWGChannel, channel_name=None):
-            if not channel_name:
-                channel_name = channel.name
-
-            self.AWG_channels[channel_name] = channel
-            self.AWG_waveforms[channel_name] = None
-
-            return self
+            self.waveform_padding_scheme = {}
 
         def add_waveform(self, channel_name, waveform: WaveForm):
             if not self.AWG_waveforms[channel_name]:
@@ -40,20 +44,15 @@ class Sequence:
                 self.AWG_waveforms[channel_name] = \
                     self.AWG_waveforms[channel_name].concat(waveform)
 
-        def clear_waveforms(self):
-            for channel_name, channel in self.AWG_channels.items():
-                self.AWG_waveforms[channel_name] = None
-                self.AWG_channels[channel_name].set_offset(0)
+        def set_waveform_padding(self, channel, padding_scheme=0):
+            self.waveform_padding_scheme[channel] = padding_scheme
 
-        def set_offset(self, channel_name, offset_volts):
-            self.AWG_channels[channel_name].set_offset(offset_volts)
-
-        def set_waveform_padding(self, channel_name, padding_position=0):
-            # padding_position is one of Sequence.PADDING_BEFORE and Sequence.PADDING_BEHIND
+        def pad_waveform(self, channel_name):
             waveform_width = self.AWG_waveforms[channel_name].width
             padding_width = self.duration - waveform_width
 
-            if padding_position == Sequence.PADDING_BEFORE:
+            if channel_name not in self.waveform_padding_scheme \
+                    or self.waveform_padding_scheme[channel_name] == Sequence.PADDING_BEFORE:
                 self.AWG_waveforms[channel_name] = Blank(padding_width).concat(
                     self.AWG_waveforms[channel_name]
                 )
@@ -62,37 +61,30 @@ class Sequence:
                     self.AWG_waveforms[channel_name]
                 )
 
-        def setup_AWG(self):
-            for channel_name, channel in self.AWG_channels.items():
-                if self.AWG_waveforms[channel_name]:
-                    if abs(self.AWG_waveforms[channel_name].width - self.duration) > 1e-9:
-                        runtime.logger.warning(f"Sequence Slice {self.name}:"
-                                               f" waveform width {self.AWG_waveforms[channel_name].width}s"
-                                               f" not equals to slice duration {self.duration}s.")
-                    channel.write_waveform(self.AWG_waveforms[channel_name])
+        def get_waveform(self, channel_name):
+            self.pad_waveform(channel_name)
+            return self.AWG_waveforms[channel_name] if channel_name in self.AWG_waveforms else None
 
-        def run_AWG(self):
-            for channel_name, channel in self.AWG_channels.items():
-                if self.AWG_waveforms[channel_name]:
-                    channel.run()
 
-    def __init__(self, trigger_device: TriggerDevice, cycle_frequency, trigger_width=4e-6):
+    def __init__(self, trigger_device: TriggerDevice, cycle_frequency):
         self.cycle_frequency = cycle_frequency
         self.trigger_device = trigger_device
-        self.trigger_width = trigger_width
         self.slices = {}
-        pass
+        self.triggers = {}
+        self.AWG_channels = {}
+        self.AWG_channel_to_trigger = {}
+        self.last_AWG_compiled_waveforms = {}
 
-    def add_slice(self, name, trigger_line, start_from, duration, need_setup_trigger_dev=True) -> Slice:
-        # add_slice("drive", "drive", "T0", None, 100e-6)
-        # add_slice("drive", "probe_mod", "AB", 100e-6, 4e-6)
-        # add_slice("drive", "probe_src", "CD", 100e-6, 4e-6)
+    def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> Trigger:
+        self.triggers[name] = Sequence.Trigger(name, trigger_channel, raise_at, drop_after, self)
+        return self.triggers[name]
 
+    def add_slice(self, name, start_from, duration) -> Slice:
         if start_from + duration > 1 / self.cycle_frequency:
             raise ValueError(f"Out of range. Your slice ends at {start_from + duration}s, "
                              f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
 
-        self.slices[name] = Sequence.Slice(name, trigger_line, start_from, duration, need_setup_trigger_dev)
+        self.slices[name] = Sequence.Slice(name, start_from, duration)
 
         return self.slices[name]
 
@@ -106,18 +98,52 @@ class Sequence:
 
     def setup_trigger(self):
         self.trigger_device.set_cycle_frequency(self.cycle_frequency)
-        for slice in self.slices.values():
-            assert isinstance(slice, Sequence.Slice)
-            if slice.need_setup:
-                self.trigger_device.set_trigger(slice.trigger_line, slice.start_from, self.trigger_width)
+        for trigger in self.triggers.values():
+            assert isinstance(trigger, Sequence.Trigger)
+            self.trigger_device.set_trigger(trigger.trigger_channel, trigger.raise_at, trigger.drop_after)
+
+    def compile_waveforms(self):
+        slices_sorted = sorted(self.slices.values(), key=lambda slice: slice.start_from)
+        AWG_compiled_waveforms = {}
+        for slice in slices_sorted:
+            for channel_name, channel in self.AWG_channels.items():
+                if channel_name in slice.AWG_waveforms:
+                    trigger_start_from = self.AWG_channel_to_trigger[channel_name].raise_at
+                    assert trigger_start_from <= slice.start_from, \
+                        f"Waveform assigned to AWG channel before it is triggered! " \
+                        f"(Slice {slice.name}, AWG Channel {channel_name})"
+
+                    waveform = slice.get_waveform(channel_name)
+
+                    if channel_name in AWG_compiled_waveforms:
+                        if AWG_compiled_waveforms[channel_name].width < slice.start_from - trigger_start_from:
+                            AWG_compiled_waveforms[channel_name].concat(Blank(slice.start_from - trigger_start_from))
+                        AWG_compiled_waveforms[channel_name].concat(waveform)
+                    else:
+                        if slice.start_from - trigger_start_from > 0:
+                             AWG_compiled_waveforms[channel_name] = \
+                                 Blank(slice.start_from - trigger_start_from).concat(waveform)
+                        else:
+                            AWG_compiled_waveforms[channel_name] = waveform
+
+        self.last_AWG_compiled_waveforms = AWG_compiled_waveforms
+
+        return AWG_compiled_waveforms
 
     def setup_AWG(self):
-        for slice in self.slices.values():
-          slice.setup_AWG()
+        self.stop_AWG()
+        compiled_waveform = self.compile_waveforms()
+        for channel_name, waveform in compiled_waveform.items():
+            self.AWG_channels[channel_name].write_waveform(waveform)
 
-    def run(self):
-        for slice in self.slices.values():
-            slice.run_AWG()
+    def stop_AWG(self):
+        for channel_name, channel in self.AWG_channels.items():
+            channel.stop()
+
+    def run_AWG(self):
+        assert self.last_AWG_compiled_waveforms, 'Please run setup_AWG() first!'
+        for channel_name, waveform in self.last_AWG_compiled_waveforms.items():
+            self.AWG_channels[channel_name].run()
 
     def plot(self):
         plot_sample_rate = 1e6
@@ -125,11 +151,10 @@ class Sequence:
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure(figsize=(8, len(self.slices) * 1))
+        fig = Figure(figsize=(8, len(self.slices) * 1.5))
         ax = fig.subplots(1, 1)
 
-        # take years to run this line
-        fig.tight_layout()
+        fig.set_tight_layout(True)
 
         for spine in ["left", "top", "right"]:
             ax.spines[spine].set_visible(False)
@@ -143,33 +168,96 @@ class Sequence:
         height = 0
         i = 0
 
-        for slice in self.slices.values():
-            height += 1.5
-            for channel_name, waveform in slice.AWG_waveforms.items():
-                y = np.zeros(len(sample_points))
-                for t in range(len(sample_points)):
-                    if waveform and (slice.start_from < sample_points[t] < slice.start_from + slice.duration):
-                        y[t] = waveform.at(sample_points[t] - slice.start_from)
-                    else:
-                        y[t] = 0 + height
+        trigger_sorted = sorted(self.triggers.values(), key=lambda trigger: trigger.raise_at)
 
-                if y.max() - y.min() != 0:
-                    y = (y - y.min()) / (y.max() - y.min()) + height
+        for trigger in trigger_sorted:
+            height += 1.5
+            for channel in reversed(trigger.linked_AWG_channels):
+                channel_name = channel.name
+
+                # draw waveform first
+                y = np.zeros(len(sample_points))
+                start_at_marker = 0
+                end_at_marker = 0
+                if channel_name in self.last_AWG_compiled_waveforms:
+                    waveform = self.last_AWG_compiled_waveforms[channel_name]
+                    for t in range(len(sample_points)):
+                        if waveform and (trigger.raise_at < sample_points[t] < trigger.raise_at + waveform.width):
+                            y[t] = waveform.at(sample_points[t] - trigger.raise_at)
+                        else:
+                            y[t] = 0
+                            if trigger.raise_at < sample_points[t + 1] < trigger.raise_at + waveform.width:
+                                start_at_marker = plot_sample_points[t]
+                            elif trigger.raise_at < sample_points[t - 1] < trigger.raise_at + waveform.width:
+                                end_at_marker = plot_sample_points[t]
+
+                    if y.max() - y.min() != 0:
+                        y = (y - y.min()) / (y.max() - y.min()) + height
+                    else:
+                        y = y + height
+
+                    ax.plot([start_at_marker], [height], color=colors[i % len(colors)], marker=">", markersize=5)
+                    ax.plot([end_at_marker], [height], color=colors[i % len(colors)], marker="<", markersize=5)
+                else:
+                    y = y + height
+
                 ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
-                ax.annotate(channel_name, xy=(text_x, height + 0.5), fontsize=9, ha="right", va="center", fontstyle="italic")
+                ax.annotate(channel_name, xy=(text_x, height + 0.5), fontsize=9, ha="right", va="center")
                 height += 1.5
                 i += 1
 
+            # draw trigger
             y = np.zeros(len(sample_points))
             for t in range(len(sample_points)):
-                if slice.start_from < sample_points[t] < slice.start_from + self.trigger_width:
+                if trigger.raise_at < sample_points[t] < trigger.raise_at + trigger.drop_after:
                     y[t] = height + 1
                 else:
                     y[t] = height
 
             ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
-            ax.annotate(slice.name, xy=(text_x, height + 0.5), fontsize=11, ha="right", va="center")
+            ax.annotate(trigger.name, xy=(text_x, height + 0.5), fontsize=11,
+                        ha="right", va="center", fontweight="bold",
+                        bbox=dict(fc='white', ec='black', boxstyle='square,pad=0.1'))
             i += 1
 
+        slice_overlap_counts = {}
+        for slice in self.slices.values():
+            slice_overlap_count = 0
+            for slice_to_dodge in slice_overlap_counts.keys():
+                if slice_to_dodge.start_from <= slice.start_from <= slice_to_dodge.start_from  \
+                    or slice_to_dodge.start_from <= slice.start_from + slice.duration <= slice_to_dodge.start_from:
+                    slice_overlap_count += 1
+            slice_overlap_counts[slice] = slice_overlap_count
+
+        i = 0
+        height += 1.5
+        max_height = height + (1 + max(slice_overlap_counts.values()))
+        for slice in self.slices.values():
+            region_x = [ slice.start_from * 1e6, slice.start_from * 1e6,
+                         slice.start_from  * 1e6 + slice.duration * 1e6, slice.start_from * 1e6 + slice.duration * 1e6]
+            region_y = [ 0, height,
+                         height, 0 ]
+
+            ax.fill(region_x, region_y, color=colors[ i % len(colors) ], alpha=0.01)
+            ax.plot([slice.start_from * 1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
+            ax.plot([ (slice.start_from + slice.duration)*1e6 ]*2, [0, max_height], linestyle="--", color="lightgrey")
+
+            text_x = (slice.start_from + slice.duration / 2) * 1e6
+            text_y = height + (1 + slice_overlap_counts[slice])
+            # draw arrow
+            ax.annotate(
+                "",
+                xy=(slice.start_from * 1e6, text_y), xycoords="data",
+                xytext=((slice.start_from + slice.duration) * 1e6, text_y), textcoords="data",
+                arrowprops=dict(arrowstyle='<|-|>', connectionstyle='arc3')
+            )
+            # draw slice name
+            ax.annotate(slice.name,
+                        xy=(text_x, text_y),
+                        fontsize=9, ha="center", va="center", bbox=dict(fc='white', ec=(0,0,0,0), boxstyle='square,pad=0')
+            )
+            i += 1
+
+        ax.set_ylim(0, max_height + 1)
         return fig
 

@@ -126,5 +126,5 @@ class Sweep1DExperiment(Experiment):
                     marker='x', markersize=4, linewidth=1)
             ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
             ax.set_ylabel(f"{result_name} / {result_unit}")
-            fig.tight_layout()
+            fig.set_tight_layout(True)
             self.result_plot_senders[result_name].send(fig)

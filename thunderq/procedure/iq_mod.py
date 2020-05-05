@@ -54,7 +54,7 @@ class IQModulation(Procedure):
         if lo_freq:
             self.lo_freq = lo_freq
 
-    def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp, padding):
+    def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
         if mod_freq != .0:
@@ -65,8 +65,7 @@ class IQModulation(Procedure):
         else:
             IQ_waveform = waveform.DC(drive_len, drive_mod_amp)
 
-        return waveform.Real(IQ_waveform).concat(waveform.Blank(padding)), \
-               waveform.Imag(IQ_waveform).concat(waveform.Blank(padding))
+        return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
     def pre_run(self, sequence: Sequence):
         if not self.target_freq or not self.mod_amp:
@@ -78,11 +77,9 @@ class IQModulation(Procedure):
         self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
         self.lo_dev.run()
 
-        I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp, self.after_mod_padding)
+        I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
 
         mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
-        mod_slice.set_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
-        mod_slice.set_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
         mod_slice.add_waveform(self.mod_I_name, I_waveform)
         mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
         mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
