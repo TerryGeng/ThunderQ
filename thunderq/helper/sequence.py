@@ -67,6 +67,7 @@ class Sequence:
 
         def get_waveform(self, channel_name):
             self.channel_updated.append(channel_name)
+            self.pad_waveform(channel_name)
             return self.AWG_waveforms[channel_name] if channel_name in self.AWG_waveforms else None
 
         def clear_waveform(self, channel_name):

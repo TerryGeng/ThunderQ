@@ -94,15 +94,16 @@ class IQModulation(Procedure):
             self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
             self.lo_dev.run()
 
-            I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
-
             mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
             mod_slice.clear_waveform(self.mod_I_name)
             mod_slice.clear_waveform(self.mod_Q_name)
-            mod_slice.add_waveform(self.mod_I_name, I_waveform)
-            mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
-            mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
-            mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+
+            if self.mod_freq > 0:
+                I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
+                mod_slice.add_waveform(self.mod_I_name, I_waveform)
+                mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
+                mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
+                mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
 
             self.has_update = False
 
