@@ -69,13 +69,10 @@ class IQModulation(Procedure):
     def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
-        if mod_freq != .0:
-            IQ_waveform = waveform.CalibratedIQ(mod_freq,
-                                                I_waveform=dc_waveform,
-                                                IQ_cali=self.mod_IQ_calibration,
-                                                down_conversion=False) # Use up conversion
-        else:
-            IQ_waveform = waveform.DC(drive_len, drive_mod_amp)
+        IQ_waveform = waveform.CalibratedIQ(mod_freq,
+                                            I_waveform=dc_waveform,
+                                            IQ_cali=self.mod_IQ_calibration,
+                                            down_conversion=False) # Use up conversion
 
         if self.after_mod_padding:
             return waveform.Real(IQ_waveform).concat(waveform.Blank(self.after_mod_padding)), \
@@ -98,12 +95,11 @@ class IQModulation(Procedure):
             mod_slice.clear_waveform(self.mod_I_name)
             mod_slice.clear_waveform(self.mod_Q_name)
 
-            if self.mod_freq > 0:
-                I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
-                mod_slice.add_waveform(self.mod_I_name, I_waveform)
-                mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
-                mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
-                mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+            I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
+            mod_slice.add_waveform(self.mod_I_name, I_waveform)
+            mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
+            mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
+            mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
 
             self.has_update = False
 
