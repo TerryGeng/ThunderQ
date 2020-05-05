@@ -21,10 +21,9 @@ class IQModulation(Procedure):
         self.lo_dev = lo_dev
 
         if not mod_IQ_calibration:
-            self.mod_IQ_calibration = IQCalibrationContainer()
-        else:
-            self.mod_IQ_calibration = mod_IQ_calibration
+            mod_IQ_calibration = IQCalibrationContainer()
 
+        self.mod_IQ_calibration = mod_IQ_calibration
 
         self.lo_freq = mod_IQ_calibration.lo_freq # Hz, the suggested value of current calibration
         self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
