@@ -37,8 +37,10 @@ class Sequence:
             self.duration = duration
             self.AWG_waveforms = {}
             self.waveform_padding_scheme = {}
+            self.channel_updated = []
 
         def add_waveform(self, channel_name, waveform: WaveForm):
+            self.channel_updated.append(channel_name)
             if channel_name not in self.AWG_waveforms:
                 self.AWG_waveforms[channel_name] = waveform
             else:
@@ -64,9 +66,12 @@ class Sequence:
                     )
 
         def get_waveform(self, channel_name):
-            self.pad_waveform(channel_name)
+            self.channel_updated.append(channel_name)
             return self.AWG_waveforms[channel_name] if channel_name in self.AWG_waveforms else None
 
+        def clear_waveform(self, channel_name):
+            self.has_update = True
+            del self.AWG_waveforms[channel_name]
 
     def __init__(self, trigger_device: TriggerDevice, cycle_frequency):
         self.cycle_frequency = cycle_frequency
@@ -76,6 +81,7 @@ class Sequence:
         self.AWG_channels = {}
         self.AWG_channel_to_trigger = {}
         self.last_AWG_compiled_waveforms = {}
+        self.AWG_channel_update_list = []
 
     def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> Trigger:
         self.triggers[name] = Sequence.Trigger(name, trigger_channel, raise_at, drop_after, self)
@@ -102,29 +108,36 @@ class Sequence:
 
     def compile_waveforms(self):
         slices_sorted = sorted(self.slices.values(), key=lambda slice: slice.start_from)
-        AWG_compiled_waveforms = {}
+        AWG_compiled_waveforms = self.last_AWG_compiled_waveforms
         for slice in slices_sorted:
-            for channel_name, channel in self.AWG_channels.items():
-                if channel_name in slice.AWG_waveforms:
-                    trigger_start_from = self.AWG_channel_to_trigger[channel_name].raise_at
-                    assert trigger_start_from <= slice.start_from, \
-                        f"Waveform assigned to AWG channel before it is triggered! " \
-                        f"(Slice {slice.name}, AWG Channel {channel_name})"
+            if slice.channel_updated:
+                for channel_name, channel in self.AWG_channels.items():
+                    if channel_name in slice.AWG_waveforms and channel_name in slice.channel_updated:
 
-                    waveform = slice.get_waveform(channel_name)
+                        if channel_name not in self.AWG_channel_update_list:
+                            self.AWG_channel_update_list.append(channel_name)
 
-                    if channel_name in AWG_compiled_waveforms:
-                        if AWG_compiled_waveforms[channel_name].width < slice.start_from - trigger_start_from:
-                            padding_length = slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_name].width
-                            AWG_compiled_waveforms[channel_name] = \
-                                AWG_compiled_waveforms[channel_name].concat(Blank(padding_length))
-                        AWG_compiled_waveforms[channel_name] = AWG_compiled_waveforms[channel_name].concat(waveform)
-                    else:
-                        if slice.start_from - trigger_start_from > 0:
-                            AWG_compiled_waveforms[channel_name] = \
-                                Blank(slice.start_from - trigger_start_from).concat(waveform)
+                        trigger_start_from = self.AWG_channel_to_trigger[channel_name].raise_at
+                        assert trigger_start_from <= slice.start_from, \
+                            f"Waveform assigned to AWG channel before it is triggered! " \
+                            f"(Slice {slice.name}, AWG Channel {channel_name})"
+
+                        waveform = slice.get_waveform(channel_name)
+
+                        if channel_name in AWG_compiled_waveforms:
+                            if AWG_compiled_waveforms[channel_name].width < slice.start_from - trigger_start_from:
+                                padding_length = slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_name].width
+                                AWG_compiled_waveforms[channel_name] = \
+                                    AWG_compiled_waveforms[channel_name].concat(Blank(padding_length))
+                            AWG_compiled_waveforms[channel_name] = AWG_compiled_waveforms[channel_name].concat(waveform)
                         else:
-                            AWG_compiled_waveforms[channel_name] = waveform
+                            if slice.start_from - trigger_start_from > 0:
+                                AWG_compiled_waveforms[channel_name] = \
+                                    Blank(slice.start_from - trigger_start_from).concat(waveform)
+                            else:
+                                AWG_compiled_waveforms[channel_name] = waveform
+
+            slice.channel_updated = []
 
         self.last_AWG_compiled_waveforms = AWG_compiled_waveforms
 
@@ -134,7 +147,10 @@ class Sequence:
         self.stop_AWG()
         compiled_waveform = self.compile_waveforms()
         for channel_name, waveform in compiled_waveform.items():
-            self.AWG_channels[channel_name].write_waveform(waveform)
+            if channel_name in self.AWG_channel_update_list:
+                self.AWG_channels[channel_name].stop()
+                self.AWG_channels[channel_name].write_waveform(waveform)
+        self.AWG_channel_update_list = []
 
     def stop_AWG(self):
         for channel_name, channel in self.AWG_channels.items():

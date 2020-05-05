@@ -28,6 +28,7 @@ class FluxDynamicBias(Procedure):
                     assert self.flux_bias_default, f'Undefined flux bias value for channel {channel_name} at slice {slice_name}!'
                     channel_offset = self.flux_bias_default[channel_name]
 
+                slice.clear_waveform(channel_name)
                 slice.add_waveform(channel_name, DC(width=slice.duration, offset=channel_offset))
 
     def post_run(self):
