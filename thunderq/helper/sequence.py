@@ -70,8 +70,9 @@ class Sequence:
             return self.AWG_waveforms[channel_name] if channel_name in self.AWG_waveforms else None
 
         def clear_waveform(self, channel_name):
-            self.has_update = True
-            del self.AWG_waveforms[channel_name]
+            if channel_name in self.AWG_waveforms:
+                self.has_update = True
+                del self.AWG_waveforms[channel_name]
 
     def __init__(self, trigger_device: TriggerDevice, cycle_frequency):
         self.cycle_frequency = cycle_frequency
@@ -116,6 +117,8 @@ class Sequence:
 
                         if channel_name not in self.AWG_channel_update_list:
                             self.AWG_channel_update_list.append(channel_name)
+                            if channel_name in self.last_AWG_compiled_waveforms:
+                                del self.last_AWG_compiled_waveforms[channel_name]
 
                         trigger_start_from = self.AWG_channel_to_trigger[channel_name].raise_at
                         assert trigger_start_from <= slice.start_from, \

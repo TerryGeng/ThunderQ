@@ -82,6 +82,7 @@ class Sweep1DExperiment(Experiment):
                 self.results[result].append(getattr(self, result))
 
             threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
+        self.stop_sequence()
         self.process_data_post_exp()
 
     def update_parameters(self):
@@ -92,7 +93,7 @@ class Sweep1DExperiment(Experiment):
 
     def process_data_post_exp(self):
         if self.save_to_file:
-            if os.path.isdir(self.save_path):
+            if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)
 
             timestamp = time.strftime("%Y%m%d_%H%M%S")

@@ -17,10 +17,10 @@ class RabiExperiment(Sweep1DExperiment):
         from thunderq.driver.ASG import ASG_E8257C
         from thunderq.driver.acqusition import Acquisition_ATS9870
         from thunderq.driver.trigger import TriggerDG645
-        assert isinstance(runtime.env.prob_mod_dev, AWG_M3202A)
+        assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
         assert isinstance(runtime.env.trigger_dev, TriggerDG645)
         assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-        assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
+        assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
         assert isinstance(runtime.env.sequence, Sequence)
 
         self.drive_len = 0
@@ -28,7 +28,7 @@ class RabiExperiment(Sweep1DExperiment):
         self.drive_lo_power = 7.5  # dBm
         self.drive_freq = 5.797e9  # Hz
         self.drive_lo_freq = self.drive_freq # Hz
-        self.probe_freq = 7.0645e9  # Hz
+        self.probe_freq = 7.0663e9  # Hz
 
         self.flux_bias_procedure = FluxDynamicBias(
             flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
@@ -91,11 +91,11 @@ class RabiExperiment(Sweep1DExperiment):
             self.sequence_sent = True
 
 
-cavity_exp = CavitySweepExperiment()
-cavity_exp.sweep(
-    parameter_name="probe_freq",
-    parameter_unit="Hz",
-    points=np.linspace(cavity_exp.center_probe_freq - 0.005e9, cavity_exp.center_probe_freq + 0.005e9, 100),
+rabi_exp = RabiExperiment()
+rabi_exp.sweep(
+    parameter_name="drive_len",
+    parameter_unit="s",
+    points=np.linspace(0, 500e-9, 200),
     result_name="result_amp",
     result_unit="arb."
 )

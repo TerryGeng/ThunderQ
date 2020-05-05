@@ -24,6 +24,9 @@ class Experiment:
         self.sequence.setup_AWG()
         self.sequence.run_AWG()
 
+    def stop_sequence(self):
+        self.sequence.stop_AWG()
+
     def add_procedure(self, procedure: Procedure):
         self.procedures.append(procedure)
 
