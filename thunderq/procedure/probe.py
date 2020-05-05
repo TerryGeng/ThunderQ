@@ -2,7 +2,7 @@ import numpy as np
 from thunderq.helper import waveform as waveform
 from thunderq.helper.sequence import Sequence
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
-from thunderq.driver.acqusition import AcquisitionDevice
+from thunderq.driver.acquisition import AcquisitionDevice
 from thunderq.driver.ASG import ASG
 from thunderq.procedure import IQModulation
 import thunderq.runtime as runtime

@@ -1,7 +1,7 @@
 from thunderq.helper.sequence import Sequence
 from thunderq.driver.AWG import AWGChannel, AWG_M3202A
 from thunderq.driver.ASG import ASG_E8257C, ASG_SGS993
-from thunderq.driver.acqusition import Acquisition_ATS9870
+from thunderq.driver.acquisition import Acquisition_ATS9870
 from thunderq.driver.trigger import TriggerDG645
 import thunderq.runtime as runtime
 

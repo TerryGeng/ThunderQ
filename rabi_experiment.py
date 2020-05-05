@@ -15,7 +15,7 @@ class RabiExperiment(Sweep1DExperiment):
         from thunderq.helper.sequence import Sequence
         from thunderq.driver.AWG import AWG_M3202A
         from thunderq.driver.ASG import ASG_E8257C
-        from thunderq.driver.acqusition import Acquisition_ATS9870
+        from thunderq.driver.acquisition import Acquisition_ATS9870
         from thunderq.driver.trigger import TriggerDG645
         assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
         assert isinstance(runtime.env.trigger_dev, TriggerDG645)
