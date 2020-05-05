@@ -25,6 +25,7 @@ class Sequence:
 
         def link_AWG_channel(self, channel):
             self.linked_AWG_channels.append(channel)
+            self.sequence.AWG_channels[channel.name] = channel
             self.sequence.AWG_channel_to_trigger[channel.name] = self
             return self
 
@@ -38,7 +39,7 @@ class Sequence:
             self.waveform_padding_scheme = {}
 
         def add_waveform(self, channel_name, waveform: WaveForm):
-            if not self.AWG_waveforms[channel_name]:
+            if channel_name not in self.AWG_waveforms:
                 self.AWG_waveforms[channel_name] = waveform
             else:
                 self.AWG_waveforms[channel_name] = \
@@ -51,15 +52,16 @@ class Sequence:
             waveform_width = self.AWG_waveforms[channel_name].width
             padding_width = self.duration - waveform_width
 
-            if channel_name not in self.waveform_padding_scheme \
-                    or self.waveform_padding_scheme[channel_name] == Sequence.PADDING_BEFORE:
-                self.AWG_waveforms[channel_name] = Blank(padding_width).concat(
-                    self.AWG_waveforms[channel_name]
-                )
-            else:
-                self.AWG_waveforms[channel_name] = Blank(padding_width).append_to(
-                    self.AWG_waveforms[channel_name]
-                )
+            if padding_width > 0:
+                if channel_name not in self.waveform_padding_scheme \
+                        or self.waveform_padding_scheme[channel_name] == Sequence.PADDING_BEFORE:
+                    self.AWG_waveforms[channel_name] = Blank(padding_width).concat(
+                        self.AWG_waveforms[channel_name]
+                    )
+                else:
+                    self.AWG_waveforms[channel_name] = Blank(padding_width).append_to(
+                        self.AWG_waveforms[channel_name]
+                    )
 
         def get_waveform(self, channel_name):
             self.pad_waveform(channel_name)
@@ -88,10 +90,6 @@ class Sequence:
 
         return self.slices[name]
 
-    def clear_waveforms(self):
-        for slice in self.slices.values():
-            slice.clear_waveforms()
-
     def setup(self):
         self.setup_trigger()
         self.setup_AWG()
@@ -117,12 +115,14 @@ class Sequence:
 
                     if channel_name in AWG_compiled_waveforms:
                         if AWG_compiled_waveforms[channel_name].width < slice.start_from - trigger_start_from:
-                            AWG_compiled_waveforms[channel_name].concat(Blank(slice.start_from - trigger_start_from))
-                        AWG_compiled_waveforms[channel_name].concat(waveform)
+                            padding_length = slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_name].width
+                            AWG_compiled_waveforms[channel_name] = \
+                                AWG_compiled_waveforms[channel_name].concat(Blank(padding_length))
+                        AWG_compiled_waveforms[channel_name] = AWG_compiled_waveforms[channel_name].concat(waveform)
                     else:
                         if slice.start_from - trigger_start_from > 0:
-                             AWG_compiled_waveforms[channel_name] = \
-                                 Blank(slice.start_from - trigger_start_from).concat(waveform)
+                            AWG_compiled_waveforms[channel_name] = \
+                                Blank(slice.start_from - trigger_start_from).concat(waveform)
                         else:
                             AWG_compiled_waveforms[channel_name] = waveform
 
@@ -151,7 +151,7 @@ class Sequence:
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure(figsize=(8, len(self.slices) * 1.5))
+        fig = Figure(figsize=(8, len(self.slices) * 1.8))
         ax = fig.subplots(1, 1)
 
         fig.set_tight_layout(True)
@@ -177,25 +177,21 @@ class Sequence:
 
                 # draw waveform first
                 y = np.zeros(len(sample_points))
-                start_at_marker = 0
-                end_at_marker = 0
                 if channel_name in self.last_AWG_compiled_waveforms:
                     waveform = self.last_AWG_compiled_waveforms[channel_name]
                     for t in range(len(sample_points)):
-                        if waveform and (trigger.raise_at < sample_points[t] < trigger.raise_at + waveform.width):
+                        if waveform and (trigger.raise_at <= sample_points[t] < trigger.raise_at + waveform.width):
                             y[t] = waveform.at(sample_points[t] - trigger.raise_at)
                         else:
                             y[t] = 0
-                            if trigger.raise_at < sample_points[t + 1] < trigger.raise_at + waveform.width:
-                                start_at_marker = plot_sample_points[t]
-                            elif trigger.raise_at < sample_points[t - 1] < trigger.raise_at + waveform.width:
-                                end_at_marker = plot_sample_points[t]
 
                     if y.max() - y.min() != 0:
                         y = (y - y.min()) / (y.max() - y.min()) + height
                     else:
                         y = y + height
 
+                    start_at_marker = trigger.raise_at * 1e6
+                    end_at_marker = (trigger.raise_at + waveform.width) * 1e6
                     ax.plot([start_at_marker], [height], color=colors[i % len(colors)], marker=">", markersize=5)
                     ax.plot([end_at_marker], [height], color=colors[i % len(colors)], marker="<", markersize=5)
                 else:
@@ -224,8 +220,8 @@ class Sequence:
         for slice in self.slices.values():
             slice_overlap_count = 0
             for slice_to_dodge in slice_overlap_counts.keys():
-                if slice_to_dodge.start_from <= slice.start_from <= slice_to_dodge.start_from  \
-                    or slice_to_dodge.start_from <= slice.start_from + slice.duration <= slice_to_dodge.start_from:
+                if not slice_to_dodge.start_from > slice.start_from + slice.duration or \
+                    not slice_to_dodge.start_from + slice_to_dodge.duration < slice.start_from:
                     slice_overlap_count += 1
             slice_overlap_counts[slice] = slice_overlap_count
 

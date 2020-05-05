@@ -1,28 +1,27 @@
 import numpy as np
-
 from thunderq.experiment import Sweep1DExperiment
-from thunderq.helper.sequence import Sequence
-from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
-from thunderq.driver.AWG import AWG_M3202A
-from thunderq.driver.ASG import ASG_E8257C
-from thunderq.driver.acqusition import Acquisition_ATS9870
-from thunderq.driver.trigger import TriggerDG645
-from thunderq.procedure import IQModProbe, IQModDrive
-import thunderq.runtime as runtime
-from thunder_board.clients import PlotClient
-
 
 # Avoiding reinit, if this code is run by exec()
-
-assert isinstance(runtime.env.prob_mod_dev, AWG_M3202A)
-assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
-assert isinstance(runtime.env.sequence, Sequence)
 
 class RabiExperiment(Sweep1DExperiment):
     def __init__(self):
         super().__init__("Rabi Experiment")
+
+        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
+        from thunderq.procedure import IQModProbe, IQModDrive, FluxDynamicBias
+        import thunderq.runtime as runtime
+        from thunder_board.clients import PlotClient
+
+        from thunderq.helper.sequence import Sequence
+        from thunderq.driver.AWG import AWG_M3202A
+        from thunderq.driver.ASG import ASG_E8257C
+        from thunderq.driver.acqusition import Acquisition_ATS9870
+        from thunderq.driver.trigger import TriggerDG645
+        assert isinstance(runtime.env.prob_mod_dev, AWG_M3202A)
+        assert isinstance(runtime.env.trigger_dev, TriggerDG645)
+        assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
+        assert isinstance(runtime.env.acqusition_dev, Acquisition_ATS9870)
+        assert isinstance(runtime.env.sequence, Sequence)
 
         self.drive_len = 0
         self.drive_amp = 0.3 * 1.4  # Volts
@@ -31,7 +30,14 @@ class RabiExperiment(Sweep1DExperiment):
         self.drive_lo_freq = self.drive_freq # Hz
         self.probe_freq = 7.0645e9  # Hz
 
-        self.sequence = Sequence(runtime.env.trigger_dev, 5000)
+        self.flux_bias_procedure = FluxDynamicBias(
+            flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
+            default_bias=dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1)
+        )
+        self.flux_bias_procedure.set_bias_at_slice("drive_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
+        self.flux_bias_procedure.set_bias_at_slice("probe_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
+
+        self.add_procedure(self.flux_bias_procedure)
 
         self.drive_procedure = IQModDrive(
             drive_mod_slice_name="drive_mod",

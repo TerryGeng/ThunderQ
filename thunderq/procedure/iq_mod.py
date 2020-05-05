@@ -3,7 +3,7 @@ from thunderq.driver.ASG import ASG
 from thunderq.helper import waveform as waveform
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.helper.sequence import Sequence
-from .procedure import Procedure
+from thunderq.procedure import Procedure
 import thunderq.runtime as runtime
 
 class IQModulation(Procedure):
@@ -39,10 +39,17 @@ class IQModulation(Procedure):
         # self.drive_freq = 5.797e9 # GHz
         # self.mod_amp = 0.3  # V
 
-        self.mod_len = 4096 * 1e-9  # The length of mod waveform, in sec.
-        self.after_mod_padding = 2e-6  # Length of idle time after drive waveform, before probe signal.
+        self.mod_len = (4096 - 108) * 1e-9  # The length of mod waveform, in sec.
 
-    def set_mod_params(self, target_freq=None, mod_len=None, mod_amp=None, lo_power=None, lo_freq=None):
+        self.after_mod_padding = 0
+
+    def set_mod_params(self,
+                       target_freq=None,
+                       mod_len=None,
+                       mod_amp=None,
+                       lo_power=None,
+                       lo_freq=None,
+                       after_mod_padding=None):
         if target_freq:
             self.target_freq = target_freq
         if mod_len:
@@ -53,6 +60,9 @@ class IQModulation(Procedure):
             self.lo_power = lo_power
         if lo_freq:
             self.lo_freq = lo_freq
+        if after_mod_padding:
+            self.after_mod_padding = after_mod_padding
+
 
     def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
@@ -65,7 +75,11 @@ class IQModulation(Procedure):
         else:
             IQ_waveform = waveform.DC(drive_len, drive_mod_amp)
 
-        return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
+        if self.after_mod_padding:
+            return waveform.Real(IQ_waveform).concat(waveform.Blank(self.after_mod_padding)), \
+                   waveform.Imag(IQ_waveform).concat(waveform.Blank(self.after_mod_padding))
+        else:
+            return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
     def pre_run(self, sequence: Sequence):
         if not self.target_freq or not self.mod_amp:
@@ -74,8 +88,8 @@ class IQModulation(Procedure):
         # Upper sideband is kept, in accordance with Orkesh's calibration
         self.mod_freq = self.target_freq - self.lo_freq
         runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
-        self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
-        self.lo_dev.run()
+        # self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
+        # self.lo_dev.run()
 
         I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
 

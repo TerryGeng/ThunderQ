@@ -47,7 +47,7 @@ runtime.env.sequence.add_trigger("probe_lo", trigger_channel="CD", raise_at=100e
 runtime.env.sequence.add_trigger("acquisition", trigger_channel="EF", raise_at=101e-6)
 
 runtime.env.sequence.add_slice("flux_mod", start_from=0, duration=200e-6)
-runtime.env.sequence.add_slice("drive_mod", start_from=0, duration=98e-6)
+runtime.env.sequence.add_slice("drive_mod", start_from=0, duration=100e-6)
 runtime.env.sequence.add_slice("probe_mod", start_from=100e-6, duration=4e-6)
 
 runtime.logger.success("Device and sequence are all initialized.")

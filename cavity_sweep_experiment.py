@@ -9,20 +9,22 @@ class CavitySweepExperiment(Sweep1DExperiment):
 
         import numpy as np
         from thunderq.helper.sequence import Sequence
-        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
-        from thunderq.driver.AWG import AWG_M3202A
-        from thunderq.driver.ASG import ASG_E8257C
-        from thunderq.driver.acqusition import Acquisition_ATS9870
-        from thunderq.driver.trigger import TriggerDG645
-        from thunderq.procedure import IQModProbe
         import thunderq.runtime as runtime
-        from thunder_board.clients import PlotClient
+        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
 
-        assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
-        assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-        assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-        assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
-        assert isinstance(runtime.env.sequence, Sequence)
+        # Check if everything is up.
+        # from thunderq.driver.AWG import AWG_M3202A
+        # from thunderq.driver.ASG import ASG_E8257C
+        # from thunderq.driver.acqusition import Acquisition_ATS9870
+        # from thunderq.driver.trigger import TriggerDG645
+        # assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
+        # assert isinstance(runtime.env.trigger_dev, TriggerDG645)
+        # assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
+        # assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
+        # assert isinstance(runtime.env.sequence, Sequence)
+
+        from thunderq.procedure import IQModProbe, FluxDynamicBias
+        from thunder_board.clients import PlotClient
 
         self.center_probe_freq = 7.0645e9
 
@@ -30,6 +32,15 @@ class CavitySweepExperiment(Sweep1DExperiment):
         self.probe_freq = self.center_probe_freq
 
         self.sequence = runtime.env.sequence
+
+        self.flux_bias_procedure = FluxDynamicBias(
+            flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
+            default_bias=dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1)
+        )
+        self.flux_bias_procedure.set_bias_at_slice("drive_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
+        self.flux_bias_procedure.set_bias_at_slice("probe_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
+
+        self.add_procedure(self.flux_bias_procedure)
 
         self.probe_procedure = IQModProbe(
             probe_mod_slice_name="probe_mod",

@@ -161,6 +161,13 @@ class Sequence(WaveForm):
 
         return 0
 
+    def __str__(self):
+        _str = ""
+        for seq in self.sequence:
+            _str += f"{seq}, width:{seq.width} s\n"
+
+        return _str
+
 
 class Sin(WaveForm):
     def __init__(self, width, amplitude, omega=0, phi=0):
@@ -194,8 +201,8 @@ class ComplexExp(WaveForm):
 
 
 class DC(WaveForm):
-    def __init__(self, width, amplitude, complex_phi=0):
-        super().__init__(width, amplitude)
+    def __init__(self, width, offset, complex_phi=0):
+        super().__init__(width, offset)
         self.complex_phi = complex_phi
 
     def at(self, time):

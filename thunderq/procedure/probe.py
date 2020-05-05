@@ -36,9 +36,9 @@ class IQModProbe(IQModulation):
     def pre_run(self, sequence: Sequence):
         super().pre_run(sequence)
 
-        self.acquisition_dev.set_acquisition_params(length=self.readout_len,
-                                                    repeats=self.repeat,
-                                                    delay_after_trigger=0)
+        # self.acquisition_dev.set_acquisition_params(length=self.readout_len,
+        #                                             repeats=self.repeat,
+        #                                             delay_after_trigger=0)
 
     def post_run(self):
         self.acquisition_dev.start_acquisition()

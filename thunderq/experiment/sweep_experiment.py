@@ -82,7 +82,6 @@ class Sweep1DExperiment(Experiment):
                 self.results[result].append(getattr(self, result))
 
             threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
-        self.sequence.clear_waveforms()
         self.process_data_post_exp()
 
     def update_parameters(self):
