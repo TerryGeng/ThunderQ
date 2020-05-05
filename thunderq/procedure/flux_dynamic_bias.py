@@ -14,22 +14,28 @@ class FluxDynamicBias(Procedure):
         self.flux_bias_per_slice = {}
         self.flux_bias_default = default_bias
 
+        self.has_update = True
+
     def set_bias_at_slice(self, slice_name, bias_voltages_dict: dict):
         self.slices.append(slice_name)
         self.flux_bias_per_slice[slice_name] = bias_voltages_dict
+        self.has_update = True
 
     def pre_run(self, sequence: Sequence):
-        for slice_name in self.slices:
-            slice: Sequence.Slice = sequence.slices[slice_name]
-            for channel_name in self.flux_channel_names:
-                if channel_name in self.flux_bias_per_slice[slice_name]:
-                    channel_offset = self.flux_bias_per_slice[slice_name][channel_name]
-                else:
-                    assert self.flux_bias_default, f'Undefined flux bias value for channel {channel_name} at slice {slice_name}!'
-                    channel_offset = self.flux_bias_default[channel_name]
+        if self.has_update:
+            for slice_name in self.slices:
+                slice: Sequence.Slice = sequence.slices[slice_name]
+                for channel_name in self.flux_channel_names:
+                    if channel_name in self.flux_bias_per_slice[slice_name]:
+                        channel_offset = self.flux_bias_per_slice[slice_name][channel_name]
+                    else:
+                        assert self.flux_bias_default, f'Undefined flux bias value for channel {channel_name} at slice {slice_name}!'
+                        channel_offset = self.flux_bias_default[channel_name]
 
-                slice.clear_waveform(channel_name)
-                slice.add_waveform(channel_name, DC(width=slice.duration, offset=channel_offset))
+                    slice.clear_waveform(channel_name)
+                    slice.add_waveform(channel_name, DC(width=slice.duration, offset=channel_offset))
+
+            self.has_update = False
 
     def post_run(self):
         pass

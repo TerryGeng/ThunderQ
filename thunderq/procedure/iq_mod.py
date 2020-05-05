@@ -43,6 +43,8 @@ class IQModulation(Procedure):
 
         self.after_mod_padding = 0
 
+        self.has_update = True
+
     def set_mod_params(self,
                        target_freq=None,
                        mod_len=None,
@@ -50,6 +52,7 @@ class IQModulation(Procedure):
                        lo_power=None,
                        lo_freq=None,
                        after_mod_padding=None):
+        self.has_update = True
         if target_freq:
             self.target_freq = target_freq
         if mod_len:
@@ -82,24 +85,27 @@ class IQModulation(Procedure):
             return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
     def pre_run(self, sequence: Sequence):
-        if not self.target_freq or not self.mod_amp:
-            raise ValueError("Modulation parameters should be set first.")
+        if self.has_update:
+            if not self.target_freq or not self.mod_amp:
+                raise ValueError("Modulation parameters should be set first.")
 
-        # Upper sideband is kept, in accordance with Orkesh's calibration
-        self.mod_freq = self.target_freq - self.lo_freq
-        runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
-        self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
-        self.lo_dev.run()
+            # Upper sideband is kept, in accordance with Orkesh's calibration
+            self.mod_freq = self.target_freq - self.lo_freq
+            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
+            self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
+            self.lo_dev.run()
 
-        I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
+            I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
 
-        mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
-        mod_slice.clear_waveform(self.mod_I_name)
-        mod_slice.clear_waveform(self.mod_Q_name)
-        mod_slice.add_waveform(self.mod_I_name, I_waveform)
-        mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
-        mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
-        mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+            mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
+            mod_slice.clear_waveform(self.mod_I_name)
+            mod_slice.clear_waveform(self.mod_Q_name)
+            mod_slice.add_waveform(self.mod_I_name, I_waveform)
+            mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
+            mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
+            mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+
+            self.has_update = False
 
     def post_run(self):
         pass
