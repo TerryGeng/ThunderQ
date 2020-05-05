@@ -131,7 +131,7 @@ class Sequence:
         return AWG_compiled_waveforms
 
     def setup_AWG(self):
-        self.stop_AWG()
+        #self.stop_AWG()
         compiled_waveform = self.compile_waveforms()
         for channel_name, waveform in compiled_waveform.items():
             self.AWG_channels[channel_name].write_waveform(waveform)
