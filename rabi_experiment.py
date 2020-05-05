@@ -1,4 +1,5 @@
 import numpy as np
+import threading
 from thunderq.experiment import Sweep1DExperiment
 
 # Avoiding reinit, if this code is run by exec()
@@ -28,7 +29,7 @@ class RabiExperiment(Sweep1DExperiment):
         self.drive_lo_power = 7.5  # dBm
         self.drive_freq = 5.797e9  # Hz
         self.drive_lo_freq = self.drive_freq # Hz
-        self.probe_freq = 7.0663e9  # Hz
+        self.probe_freq = 7.0645e9  # Hz
 
         self.flux_bias_procedure = FluxDynamicBias(
             flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
@@ -86,16 +87,17 @@ class RabiExperiment(Sweep1DExperiment):
 
     def run_sequence(self):
         super().run_sequence()
-        if not self.sequence_sent:
-            self.sequence_sender.send(self.sequence.plot())
-            self.sequence_sent = True
+        threading.Thread(target=self.send_sequence_plot).start()
+
+    def send_sequence_plot(self):
+        self.sequence_sender.send(self.sequence.plot())
 
 
 rabi_exp = RabiExperiment()
 rabi_exp.sweep(
     parameter_name="drive_len",
     parameter_unit="s",
-    points=np.linspace(0, 500e-9, 200),
+    points=np.linspace(0, 500e-9, 500),
     result_name="result_amp",
     result_unit="arb."
 )
