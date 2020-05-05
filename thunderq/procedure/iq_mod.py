@@ -57,7 +57,7 @@ class IQModulation(Procedure):
         if mod_len:
             self.mod_len = mod_len
         if mod_amp:
-            self.drive_mod_amp = mod_amp
+            self.mod_amp = mod_amp
         if lo_power:
             self.lo_power = lo_power
         if lo_freq:
@@ -86,7 +86,7 @@ class IQModulation(Procedure):
     def pre_run(self, sequence: Sequence):
         if self.has_update:
             if not self.target_freq or not self.mod_amp:
-                raise ValueError("Modulation parameters should be set first.")
+                raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
             # Upper sideband is kept, in accordance with Orkesh's calibration
             self.mod_freq = self.target_freq - self.lo_freq
