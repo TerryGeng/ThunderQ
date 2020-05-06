@@ -1,5 +1,8 @@
 # Please run this file in IPython.
 
+print("")
+print(" ===== Welcome to ThunderQ experiment environment =====")
+
 import os
 import threading
 from lockfile import LockFile
@@ -57,5 +60,11 @@ def find_init_env_scripts():
 
 def load_env(index):
     run_script(init_env_scripts[index])
+
+def set_logging_level(logging_level):
+    assert logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR'], \
+        'Logging level must be one of DEBUG, INFO, WARNING, ERROR'
+
+    runtime.logger.set_logging_level(logging_level)
 
 find_init_env_scripts()

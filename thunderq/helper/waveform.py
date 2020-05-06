@@ -12,6 +12,7 @@
 # TODO: what is the amplitude? relative amplitude? volts? how to process them?
 
 import numpy as np
+import matplotlib.pyplot as plt
 from .iq_calibration_container import IQCalibrationContainer
 
 class WaveForm:
@@ -46,9 +47,16 @@ class WaveForm:
             if abs(data[i]) > max_abs:
                 max_abs = abs(data[i])
 
-        data = data / max_abs # Normalize
+        if max_abs != 0:
+            data = data / max_abs # Normalize
 
         return data, max_abs
+
+    def plot(self, sample_rate):
+        sample_points = np.arange(0, self.width, 1.0 / sample_rate)
+        samples = self.direct_sample(sample_rate)
+        plt.plot(sample_points, samples)
+        plt.show()
 
     def concat(self, waveform):
         return Sequence(self, waveform)

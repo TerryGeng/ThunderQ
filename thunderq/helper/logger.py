@@ -3,18 +3,26 @@ import time
 from thunder_board import clients
 
 class Logger:
-    def __init__(self, thunderboard=True):
+    # logging_level: from less verbose to more verbose: ERROR, WARNING, INFO, DEBUG
+    def __init__(self, thunderboard=True, logging_level="INFO"):
         if thunderboard:
             self.log_sender = clients.TextClient("Log", id="log", rotate=True)
         else:
             self.log_sender = None
 
+        self.logging_level = logging_level
         self.enable_timestamp = True
 
-    def _log_stamp(self):
+    def set_logging_level(self, logging_level):
+        assert logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR'], \
+            'Logging level must be one of DEBUG, INFO, WARNING, ERROR'
+
+        self.logging_level = logging_level
+
+    def _log_stamp(self, level="INFO"):
         if self.enable_timestamp:
             _time = time.strftime("%Y-%m-%d %H:%M:%S")
-            return f"[{_time}] "
+            return f"[{_time} {level}] "
         else:
             return ""
 
@@ -25,28 +33,38 @@ class Logger:
             except (ConnectionError, IOError):
                 pass
 
+    def debug(self, msg):
+        if self.logging_level == "DEBUG":
+            msg = self._log_stamp("DEBUG") + msg
+            print(msg)
+            self.send_log("<span class='text-muted'>" + msg  + "</span>")
+
     def log(self, msg):
         self.info(msg)
 
     def info(self, msg):
-        msg = self._log_stamp() + msg
-        print(msg)
-        self.send_log(msg)
-
-    def warning(self, msg):
-        msg = self._log_stamp() + msg
-        print(msg)
-        self.send_log("<span class='text-warning'>" + msg  + "</span>")
-
-    def error(self, msg):
-        msg = self._log_stamp() + msg
-        print(msg)
-        self.send_log("<span class='text-danger'>" + msg  + "</span>")
+        if self.logging_level in ['DEBUG', 'INFO']:
+            msg = self._log_stamp("INFO") + msg
+            print(msg)
+            self.send_log(msg)
 
     def success(self, msg):
-        msg = self._log_stamp() + msg
-        print(msg)
-        self.send_log("<span class='text-success'>" + msg  + "</span>")
+        if self.logging_level in ['DEBUG', 'INFO']:
+            msg = self._log_stamp("INFO") + msg
+            print(msg)
+            self.send_log("<span class='text-success'>" + msg  + "</span>")
+
+    def warning(self, msg):
+        if self.logging_level in ['DEBUG', 'INFO', 'WARNING']:
+            msg = self._log_stamp("WARNING") + msg
+            print(msg)
+            self.send_log("<span class='text-warning'>" + msg  + "</span>")
+
+    def error(self, msg):
+        if self.logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+            msg = self._log_stamp("ERROR") + msg
+            print(msg)
+            self.send_log("<span class='text-danger'>" + msg  + "</span>")
 
 
 class ExperimentStatus:

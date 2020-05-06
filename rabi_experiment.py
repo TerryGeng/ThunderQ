@@ -35,8 +35,7 @@ class RabiExperiment(Sweep1DExperiment):
             flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
             default_bias=dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1)
         )
-        self.flux_bias_procedure.set_bias_at_slice("drive_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
-        self.flux_bias_procedure.set_bias_at_slice("probe_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
+        self.flux_bias_procedure.set_bias_at_slice("flux_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
 
         self.add_procedure(self.flux_bias_procedure)
 
@@ -58,7 +57,7 @@ class RabiExperiment(Sweep1DExperiment):
             acquisition_slice_name="acquisition",
             acquisition_dev=runtime.env.acquisition_dev,
             mod_IQ_calibration=read_IQ_calibrate_file(
-                "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
+                "data/S2_IQ_ATT1.txt")
             # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 

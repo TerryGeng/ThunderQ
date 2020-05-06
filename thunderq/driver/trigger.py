@@ -1,5 +1,12 @@
-import path_to_devices
-import DG645 # importing Orkesh's device interface
+import thunderq.runtime as runtime
+
+if not runtime.dry_run:
+    import path_to_devices
+    import DG645 # importing Orkesh's device interface
+else:
+    from .dummy import Dummy
+    DG645 = Dummy("DG645")
+    DG645.DEVICE = DG645.get_self
 
 class TriggerDevice:
     def __init__(self):

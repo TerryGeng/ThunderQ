@@ -1,10 +1,35 @@
-import numpy as np
+import thunderq.runtime as runtime
 
 from ..helper.waveform import WaveForm, CalibratedIQ
 
-import path_to_devices
-from keysightSD1 import SD_AOU, SD_Wave, SD_Waveshapes, SD_TriggerExternalSources, SD_TriggerBehaviors, \
-   SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
+if not runtime.dry_run:
+    import path_to_devices
+    from keysightSD1 import SD_AOU, SD_Wave, SD_Waveshapes, SD_TriggerExternalSources, SD_TriggerBehaviors, \
+       SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
+else:
+    from .dummy import Dummy
+    class SD_AOU(Dummy):
+        def __init__(self):
+            super().__init__("SD_AOU")
+
+    class SD_Wave(Dummy):
+        def __init__(self):
+            super().__init__("SD_AUO")
+
+    SD_Waveshapes = Dummy("SD_Waveshapes")
+    SD_Waveshapes.AOU_AWG = "SD_Waveshapes.AOU_AWG"
+
+    SD_TriggerExternalSources = Dummy("SD_TriggerExternalSources")
+    SD_TriggerExternalSources.TRIGGER_EXTERN = "SD_TriggerExternalSources.TRIGGER_EXTERN"
+
+    SD_TriggerBehaviors = Dummy("SD_TriggerBehaviors")
+    SD_TriggerBehaviors.TRIGGER_RISE = "SD_TriggerBehaviors.TRIGGER_RISE"
+
+    SD_WaveformTypes = Dummy("SD_WaveformTypes")
+    SD_WaveformTypes.WAVE_ANALOG = "SD_WaveformTypes.WAVE_ANALOG"
+
+    SD_TriggerModes = Dummy("SD_TriggerModes")
+    SD_TriggerModes.EXTTRIG = "SD_TriggerModes.EXTTRIG"
 
 
 ## Arbitary Waveform Generator
@@ -65,6 +90,8 @@ class AWG_M3202A(AWG):
             self.dev.AWGtriggerExternalConfig(ch, SD_TriggerExternalSources.TRIGGER_EXTERN,
                                               SD_TriggerBehaviors.TRIGGER_RISE)
             self.dev.AWGqueueConfig(ch, 1)  # Set queue mode to Cyclic(1)
+
+        runtime.logger.debug("ATS9870: Initialized.")
 
     def write_waveform(self, channel, waveform: WaveForm):
         sd_wave = SD_Wave()
