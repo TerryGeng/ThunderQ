@@ -44,6 +44,9 @@ class AWG:
     def set_channel_offset(self, channel, offset_voltage):
         raise NotImplementedError
 
+    def set_channel_amp(self, channel, amp_in_volts):
+        raise NotImplementedError
+
     def stop(self):
         raise NotImplementedError
 
@@ -62,6 +65,9 @@ class AWGChannel:
 
     def set_offset(self, offset_voltage):
         self.AWG.set_channel_offset(self.channel, offset_voltage)
+
+    def set_amplitude(self, amplitude_in_volts):
+        self.AWG.set_channel_amp(self.channel, amplitude_in_volts)
 
     def run(self):
         self.AWG.run(self.channel)
