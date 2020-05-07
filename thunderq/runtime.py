@@ -17,7 +17,7 @@ experiment_status: ExperimentStatus = None
 env: Env = None
 
 dry_run = False
-logging_level = "DEBUG"
+logging_level = "INFO"
 
 def runtime_initialize():
     global logger, experiment_status, env

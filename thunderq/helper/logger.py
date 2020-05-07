@@ -1,4 +1,6 @@
 import time
+import numpy as np
+from matplotlib.figure import Figure
 
 from thunder_board import clients
 
@@ -7,8 +9,10 @@ class Logger:
     def __init__(self, thunderboard=True, logging_level="INFO"):
         if thunderboard:
             self.log_sender = clients.TextClient("Log", id="log", rotate=True)
+            self.plot_sender = clients.PlotClient("Debug Plot", id="debug_plot")
         else:
             self.log_sender = None
+            self.plot_sender = None
 
         self.logging_level = logging_level
         self.enable_timestamp = True
@@ -65,6 +69,40 @@ class Logger:
             msg = self._log_stamp("ERROR") + msg
             print(msg)
             self.send_log("<span class='text-danger'>" + msg  + "</span>")
+
+    def plot(self, fig):
+        if self.plot_sender:
+            self.plot_sender.send(fig)
+            return True
+        else:
+            return False
+
+    def plot_waveform(self, **kwargs):
+        sample_rate = 1e9
+        param_list = ['sample_rate', 't_range']
+        if 'sample_rate' in kwargs:
+            sample_rate = kwargs['sample_rate']
+
+        fig = Figure(figsize=(8, 4))
+        ax = fig.subplots(1, 1)
+        colors = ["blue",  "crimson",  "orange", "forestgreen", "dodgerblue"]
+        i = 0
+        for key, waveform in kwargs.items():
+            if key in param_list:
+                continue
+
+            if 't_range' in kwargs:
+                sample_points = np.arange(kwargs['t_range'][0], kwargs['t_range'][1], 1.0 / sample_rate)
+            else:
+                sample_points = np.arange(0, waveform.width, 1.0 / sample_rate)
+
+            samples = [waveform.at(sample_point) for sample_point in sample_points]
+            ax.plot(sample_points, samples, label=key, color=colors[ i % len(colors) ])
+            i += 1
+
+        fig.set_tight_layout(True)
+        self.plot(fig)
+
 
 
 class ExperimentStatus:

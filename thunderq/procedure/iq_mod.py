@@ -52,17 +52,17 @@ class IQModulation(Procedure):
                        lo_freq=None,
                        after_mod_padding=None):
         self.has_update = True
-        if target_freq:
+        if target_freq is not None:
             self.target_freq = target_freq
-        if mod_len:
+        if mod_len is not None:
             self.mod_len = mod_len
-        if mod_amp:
+        if mod_amp is not None:
             self.mod_amp = mod_amp
-        if lo_power:
+        if lo_power is not None:
             self.lo_power = lo_power
-        if lo_freq:
+        if lo_freq is not None:
             self.lo_freq = lo_freq
-        if after_mod_padding:
+        if after_mod_padding is not None:
             self.after_mod_padding = after_mod_padding
 
 
@@ -85,9 +85,15 @@ class IQModulation(Procedure):
             if not self.target_freq or not self.mod_amp:
                 raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
+            sequence.set_AWG_channel_global_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
+            sequence.set_AWG_channel_global_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
+
             # Upper sideband is kept, in accordance with Orkesh's calibration
             self.mod_freq = self.target_freq - self.lo_freq
-            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, MOD freq {self.mod_freq/1e9} GHz, MOD amp {self.mod_amp} V.")
+            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, "
+                                f"MOD freq {self.mod_freq/1e9} GHz, "
+                                f"MOD amp {self.mod_amp} V"
+                                f"MOD len {self.mod_len} s.")
             self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
             self.lo_dev.run()
 

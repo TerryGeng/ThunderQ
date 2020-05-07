@@ -98,6 +98,9 @@ class Sequence:
 
         return self.slices[name]
 
+    def set_AWG_channel_global_offset(self, channel_name, offset_in_volts):
+        self.AWG_channels[channel_name].set_offset(offset_in_volts)
+
     def setup(self):
         self.setup_trigger()
         self.setup_AWG()

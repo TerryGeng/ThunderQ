@@ -1,6 +1,7 @@
 import numpy as np
 import threading
 from thunderq.experiment import Sweep1DExperiment
+import thunderq.runtime as runtime
 
 # Avoiding reinit, if this code is run by exec()
 
@@ -75,14 +76,19 @@ class RabiExperiment(Sweep1DExperiment):
         self.sequence = runtime.env.sequence
 
     def update_parameters(self):
-        self.drive_procedure.set_drive_params(self.drive_freq,
-                                              self.drive_len,
-                                              self.drive_amp,
-                                              self.drive_lo_power,
-                                              self.drive_lo_freq)
+        runtime.logger.warning("Rabi update drive len" + str(self.drive_len))
+        self.drive_procedure.set_drive_params(drive_freq=self.drive_freq,
+                                              drive_len=self.drive_len,
+                                              drive_mod_amp=self.drive_amp,
+                                              drive_lo_power=self.drive_lo_power,
+                                              drive_lo_freq=self.drive_freq)
 
     def retrieve_data(self):
         self.result_amp, self.result_phase = self.probe_procedure.last_result()
+
+        runtime.logger.plot_waveform(I=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_I'],
+                                     Q=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_Q'],
+                                     t_range=(97e-6, 98.1e-6))
 
     def run_sequence(self):
         super().run_sequence()
@@ -96,7 +102,7 @@ rabi_exp = RabiExperiment()
 rabi_exp.sweep(
     parameter_name="drive_len",
     parameter_unit="s",
-    points=np.linspace(0, 500e-9, 500),
+    points=np.linspace(0, 500e-9, 501),
     result_name="result_amp",
     result_unit="arb."
 )

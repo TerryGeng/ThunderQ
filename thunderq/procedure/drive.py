@@ -26,5 +26,10 @@ class IQModDrive(IQModulation):
                          drive_lo_power=None,
                          drive_lo_freq=None,
                          after_drive_padding=None):
-        super().set_mod_params(drive_freq, drive_len, drive_mod_amp, drive_lo_power, drive_lo_freq, after_drive_padding)
+        super().set_mod_params(target_freq=drive_freq,
+                               mod_len=drive_len,
+                               mod_amp=drive_mod_amp,
+                               lo_power=drive_lo_power,
+                               lo_freq=drive_lo_freq,
+                               after_mod_padding=after_drive_padding)
 

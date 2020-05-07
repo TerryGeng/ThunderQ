@@ -7,7 +7,7 @@ else:
     from .dummy import Dummy
     ATS9870 = Dummy("ATS9870")
     ATS9870.DEVICE = ATS9870.get_self
-    ATS9870.get = lambda : [0], [0]
+    ATS9870.get = lambda: ([[0]], [[0]])
 
 class AcquisitionDevice:
     def __init__(self, name):
