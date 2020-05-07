@@ -58,7 +58,7 @@ def find_init_env_scripts():
         print(f"  Run load_env() to run the last script on the list, "
               f"which is equal to load_env({len(init_env_scripts) - 1}).")
 
-def load_env(index):
+def load_env(index=0):
     run_script(init_env_scripts[index])
 
 def set_logging_level(logging_level):
