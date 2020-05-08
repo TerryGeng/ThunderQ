@@ -14,16 +14,17 @@ class RabiExperiment(Sweep1DExperiment):
         import thunderq.runtime as runtime
         from thunder_board.clients import PlotClient
 
-        from thunderq.helper.sequence import Sequence
-        from thunderq.driver.AWG import AWG_M3202A
-        from thunderq.driver.ASG import ASG_E8257C
-        from thunderq.driver.acquisition import Acquisition_ATS9870
-        from thunderq.driver.trigger import TriggerDG645
-        assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
-        assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-        assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-        assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
-        assert isinstance(runtime.env.sequence, Sequence)
+        # Check if everything is up.
+        # from thunderq.helper.sequence import Sequence
+        # from thunderq.driver.AWG import AWG_M3202A
+        # from thunderq.driver.ASG import ASG_E8257C
+        # from thunderq.driver.acquisition import Acquisition_ATS9870
+        # from thunderq.driver.trigger import TriggerDG645
+        # assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
+        # assert isinstance(runtime.env.trigger_dev, TriggerDG645)
+        # assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
+        # assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
+        # assert isinstance(runtime.env.sequence, Sequence)
 
         self.drive_len = 0
         self.drive_amp = 1.4  # Volts

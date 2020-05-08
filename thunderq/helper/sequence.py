@@ -201,11 +201,11 @@ class Sequence:
                 # draw waveform first
                 y = np.zeros(len(sample_points))
                 y_zero_pos = height
+                y = y + channel.offset
+
                 if channel_name in self.last_AWG_compiled_waveforms:
                     waveform = self.last_AWG_compiled_waveforms[channel_name]
                     y = waveform.thumbnail_sample(sample_points - trigger.raise_at)
-
-                    y = y + channel.offset
 
                     if y.max() - y.min() != 0:
                         y_zero_pos = (- y.min()) / (y.max() - y.min()) + height
