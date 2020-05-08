@@ -2,9 +2,9 @@ import thunderq.runtime as runtime
 
 class Dummy:
     def __init__(self, name="Dummy"):
-        super().__setattr__('name', name)
-        super().__setattr__('last_called', '')
         super().__setattr__('_dict', {})
+        self.name = name
+        self.last_called = ''
 
     def __getattr__(self, attr):
         if attr not in self._dict:
@@ -17,7 +17,9 @@ class Dummy:
         self._dict[attr] = value
 
     def dummy_function(self, *args, **kwargs):
-        runtime.logger.debug(f"Dummy {self.name}: *{self.last_called}* called, with params {args}, {kwargs}")
+        name = self.name
+        last_called = self.last_called
+        runtime.logger.debug(f"Dummy {name}: *{last_called}* called, with params {args}, {kwargs}")
 
     def raise_exception(self):
         raise NotImplementedError

@@ -33,11 +33,11 @@ class FluxDynamicBias(Procedure):
 
             for slice_name in self.slices:
                 slice: Sequence.Slice = sequence.slices[slice_name]
-                for channel_name in self.flux_channel_names:
+                for channel_name in self.flux_bias_per_slice[slice_name]:
                     default_bias = self.flux_bias_default[channel_name]
-                    if channel_name in self.flux_bias_per_slice[slice_name]:
-                        channel_offset = self.flux_bias_per_slice[slice_name][channel_name] - default_bias
-                        slice.clear_waveform(channel_name)
+                    channel_offset = self.flux_bias_per_slice[slice_name][channel_name] - default_bias
+                    slice.clear_waveform(channel_name)
+                    if channel_offset != 0:
                         slice.add_waveform(channel_name, DC(width=slice.duration, offset=channel_offset))
 
             self.has_update = False

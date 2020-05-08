@@ -92,7 +92,7 @@ class IQModulation(Procedure):
             self.mod_freq = self.target_freq - self.lo_freq
             runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, "
                                 f"MOD freq {self.mod_freq/1e9} GHz, "
-                                f"MOD amp {self.mod_amp} V"
+                                f"MOD amp {self.mod_amp} V, "
                                 f"MOD len {self.mod_len} s.")
             self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
             self.lo_dev.run()

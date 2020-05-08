@@ -12,16 +12,17 @@ class Env(dict):
 
 # ========== ThunderQ Runtime Options ==========
 
-runtime_initialized = False
 thunderboard_enable = True
 logger: Logger = None
 experiment_status: ExperimentStatus = None
 env: Env = None
 
-dry_run = True
+dry_run = False
 logging_level = "INFO"
 
 # ==============================================
+
+runtime_initialized = False
 
 def runtime_initialize():
     global logger, experiment_status, env
