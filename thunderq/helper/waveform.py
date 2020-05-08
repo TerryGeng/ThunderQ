@@ -82,6 +82,9 @@ class WaveForm:
             self.amplitude = self.amplitude * other
         return self
 
+    def __str__(self):
+        return f"<WaveForm Base Object>"
+
 
 class SumWave(WaveForm):
     def __init__(self, wave1: WaveForm, wave2: WaveForm):
@@ -89,7 +92,6 @@ class SumWave(WaveForm):
         self.wave1 = wave1
         self.wave2 = wave2
         self.amplitude = 1 # placeholder. THIS SHOULD NOT BE TOUCH. USE OPERATOR *, OR SET IN WAVE1 AND WAVE2.
-
 
     def at(self, time):
         assert self.amplitude == 1 # I told you not to temper it!
@@ -106,6 +108,9 @@ class SumWave(WaveForm):
             self.wave1.amplitude = self.wave1.amplitude * other
             self.wave2.amplitude = self.wave2.amplitude * other
         return self
+
+    def __str__(self):
+        return f"<SumWave, width: {self.width:e} s>\n  {self.wave1}\n  {self.wave2}"
 
 
 class CarryWave(WaveForm):
@@ -129,6 +134,9 @@ class CarryWave(WaveForm):
         else:
             self.wave1.amplitude = self.wave1.amplitude * other
         return self
+
+    def __str__(self):
+        return f"<CarryWave, width: {self.width:e} s>\n  {self.wave1}\n  {self.wave2}"
 
 
 class Sequence(WaveForm):
@@ -170,9 +178,9 @@ class Sequence(WaveForm):
         return 0
 
     def __str__(self):
-        _str = ""
+        _str = "<Sequence, width: {self.width:e} s>"
         for seq in self.sequence:
-            _str += f"{seq}, width:{seq.width} s\n"
+            _str += f"  {seq}\n"
 
         return _str
 
@@ -186,6 +194,9 @@ class Sin(WaveForm):
     def at(self, time):
         return self.amplitude * np.sin(self.omega * time + self.phi) if 0 <= time < self.width else 0
 
+    def __str__(self):
+        return f"<Sin, amplitude:{self.amplitude} V, width: {self.width:e} s>"
+
 
 class Cos(WaveForm):
     def __init__(self, width, amplitude, omega=0, phi=0):
@@ -195,6 +206,9 @@ class Cos(WaveForm):
 
     def at(self, time):
         return self.amplitude * np.cos(self.omega * time + self.phi) if 0 <= time < self.width else 0
+
+    def __str__(self):
+        return f"<Cos, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
 class ComplexExp(WaveForm):
@@ -206,6 +220,9 @@ class ComplexExp(WaveForm):
     def at(self, time):
         return self.amplitude * np.cos(self.omega * time + self.phi) + 1j * np.sin(self.omega * time + self.phi)\
             if 0 <= time < self.width else 0
+
+    def __str__(self):
+        return f"<ComplexExp, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
 class DC(WaveForm):
@@ -222,10 +239,16 @@ class DC(WaveForm):
         else:
             return self.amplitude
 
+    def __str__(self):
+        return f"<DC, offset:{self.amplitude} V, width: {self.width:e} s>"
+
 
 class Blank(DC):
     def __init__(self, width=0):
         super().__init__(width, 0, 0)
+
+    def __str__(self):
+        return f"<Blank, width: {self.width:e} s>"
 
 
 class Gaussian(WaveForm):
@@ -239,6 +262,9 @@ class Gaussian(WaveForm):
             return 0
 
         return self.amplitude * np.exp(-0.5 * ((time - 0.5 * self.width) / self.sigma) ** 2)
+
+    def __str__(self):
+        return f"<Gaussian, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
 class CalibratedIQ(WaveForm):
@@ -303,6 +329,9 @@ class CalibratedIQ(WaveForm):
     def __mul__(self, other):
         raise TypeError("It's unwise to adjust the amplitude of a calibrated waveform.")
 
+    def __str__(self):
+        return f"<CalibratedIQ, width: {self.width:e} s>\n  {self.carry_IQ}"
+
 
 class Real(WaveForm):
     def __init__(self, complex_waveform: WaveForm):
@@ -315,6 +344,9 @@ class Real(WaveForm):
     def __mul__(self, other):
         return self.complex_waveform * other
 
+    def __str__(self):
+        return f"<Real of {self.complex_waveform}>"
+
 
 class Imag(WaveForm):
     def __init__(self, complex_waveform: WaveForm):
@@ -326,3 +358,6 @@ class Imag(WaveForm):
 
     def __mul__(self, other):
         return self.complex_waveform * other
+
+    def __str__(self):
+        return f"<Imag of {self.complex_waveform}>"

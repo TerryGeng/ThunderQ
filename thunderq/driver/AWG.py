@@ -1,3 +1,5 @@
+import numpy as np
+
 import thunderq.runtime as runtime
 
 from ..helper.waveform import WaveForm, CalibratedIQ
@@ -102,6 +104,9 @@ class AWG_M3202A(AWG):
     def write_waveform(self, channel, waveform: WaveForm):
         sd_wave = SD_Wave()
         wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
+
+        # Bug / feature of M3020A. 16 zeros have to be appended to mark as the end of the waveform.
+        wave_data = np.concatenate((wave_data, np.zeros(16)))
 
         if amplitude > 1.5:
             raise ValueError(f"Waveform Amplitude Too Large! {amplitude}V is given, while the maximum for M3202A is 1.5V.")

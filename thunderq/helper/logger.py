@@ -1,4 +1,5 @@
 import time
+import threading
 import numpy as np
 from matplotlib.figure import Figure
 
@@ -9,7 +10,7 @@ class Logger:
     def __init__(self, thunderboard=True, logging_level="INFO"):
         if thunderboard:
             self.log_sender = clients.TextClient("Log", id="log", rotate=True)
-            self.plot_sender = clients.PlotClient("Debug Plot", id="debug_plot")
+            self.plot_sender = clients.PlotClient("Waveform Plot", id="debug_plot")
         else:
             self.log_sender = None
             self.plot_sender = None
@@ -78,6 +79,14 @@ class Logger:
             return False
 
     def plot_waveform(self, **kwargs):
+        threading.Thread(target=self._plot_waveform, args=kwargs)
+
+    def _plot_waveform(self, **kwargs):
+        # Usage:
+        # runtime.logger.plot_waveform(I=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_I'],
+        #                              Q=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_Q'],
+        #                              t_range=(97e-6, 98.1e-6))
+
         sample_rate = 1e9
         param_list = ['sample_rate', 't_range']
         if 'sample_rate' in kwargs:

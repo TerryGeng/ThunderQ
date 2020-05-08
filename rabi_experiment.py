@@ -26,8 +26,8 @@ class RabiExperiment(Sweep1DExperiment):
         assert isinstance(runtime.env.sequence, Sequence)
 
         self.drive_len = 0
-        self.drive_amp = 0.3 * 1.4  # Volts
-        self.drive_lo_power = 7.5  # dBm
+        self.drive_amp = 1.4  # Volts
+        self.drive_lo_power = 0  # dBm
         self.drive_freq = 5.797e9  # Hz
         self.drive_lo_freq = self.drive_freq # Hz
         self.probe_freq = 7.0645e9  # Hz
