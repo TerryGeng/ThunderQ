@@ -7,16 +7,19 @@ from matplotlib.figure import Figure
 from thunderq.experiment import Experiment, run_wrapper
 from thunderq.helper import waveform as waveform
 from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file, IQCalibrationContainer
-from thunder_board import senders
+from thunder_board import clients
 from thunderq.driver.AWG import AWGChannel, AWG_M3202A
+
+import thunderq.runtime as runtime
 
 import DG645
 import E8257C
 import M3202A
 import ATS9870_MOD2 as ATS9870
-
+import SGS993_MOD1
 
 class TestExperiment(Experiment):
+
     def __init__(self):
         super().__init__("Rabi Experiment")
         self.probe_mod_freq = 0.05e9 # 50 MHz
@@ -26,9 +29,9 @@ class TestExperiment(Experiment):
         self.lo_freq = 7.0145e9
 
         self.drive_mod_freq = 0.05e9
-        self.drive_mod_power = 0.3
+        self.drive_mod_power = 1
         self.drive_freq = 5.79157e9
-        self.drive_power = 25
+        self.drive_lo_power = 0
         self.drive_len = 0
 
         trigger = DG645.DEVICE()
@@ -59,6 +62,8 @@ class TestExperiment(Experiment):
         self.probe_mod_dev = AWG_M3202A(1, 3)
         self.probe_mod_I = AWGChannel("probe_mod_I", self.probe_mod_dev, 1)
         self.probe_mod_Q = AWGChannel("probe_mod_Q", self.probe_mod_dev, 2)
+        self.mod_IQ_calibration = read_IQ_calibrate_file(
+            "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
 
         I, Q = self.build_readout_waveform(4096*1e-9, self.probe_mod_freq, self.probe_mod_amp)
         self.probe_mod_I.write_waveform(I)
@@ -67,30 +72,26 @@ class TestExperiment(Experiment):
         self.probe_src.setFreqAmp(self.lo_freq, self.probe_power)
         self.probe_src.RFON()
 
+        self.drive_src = SGS993_MOD1.DEVICE()
+        self.drive_src.basic_setup()
         self.drive_mod_dev = AWG_M3202A(1, 5)
         self.drive_mod_I = AWGChannel("drive_mod_I", self.drive_mod_dev, 1)
         self.drive_mod_I.set_amplitude(1.4)
         self.drive_mod_Q = AWGChannel("drive_mod_Q", self.drive_mod_dev, 2)
+        self.drive_mod_I.set_amplitude(1.4)
+        self.drive_src.setFreqAmp(self.drive_freq, self.drive_lo_power)
+        self.drive_src.RFON()
 
-        self.mod_IQ_calibration = read_IQ_calibrate_file(
-            "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
-
-        #self.probe_mod.simple_shoot(1, 2, 0, self.probe_mod_freq / 1e9, 4096, np.pi/4)
 
         self.ATS9870 = ATS9870.DEVICE()
 
-        self.repeats = 200
+        self.repeats = 500
 
-        self.result_t = []
+        self.result_len = []
         self.result_amp = []
 
-        self.plot_sender = senders.PlotSender("Cavity Plot", id="cavity dip plot")
+        self.plot_sender = clients.PlotClient("Cavity Plot", id="cavity dip plot")
 
-    def pre_run(self):
-        drive_I_waveform = waveform.Blank(98e-6 - self.drive_len).concat(waveform.DC(self.drive_len, 1))
-        self.drive_mod_I.write_waveform(drive_I_waveform)
-        self.drive_mod_Q.write_waveform(drive_I_waveform)
-        self.ATS9870.req(0, 1024, repeats=self.repeats)
 
     def post_run(self):
         ch_I_datas, ch_Q_datas = self.ATS9870.get()
@@ -112,7 +113,7 @@ class TestExperiment(Experiment):
         Q_amp_avg = Q_amp_sum / self.repeats
         Q_phase_avg = Q_phase_sum / self.repeats
 
-        #self.result_freq.append(self.probe_freq / 1e9)
+        self.result_len.append(self.drive_len)
         self.result_amp.append(np.sqrt(I_amp_avg**2 + Q_amp_avg**2))
 
         threading.Thread(target=self.plot).start()
@@ -120,7 +121,7 @@ class TestExperiment(Experiment):
     def plot(self):
         fig = Figure()
         ax = fig.subplots(1, 1)
-        ax.plot(self.result_t, self.result_amp, color="b")
+        ax.plot(self.result_len, self.result_amp, color="b")
         ax.set_xlabel("Drive Length / s")
         ax.set_ylabel("Amplitude / arb.")
         self.plot_sender.send(fig)
@@ -128,11 +129,23 @@ class TestExperiment(Experiment):
     @run_wrapper
     def run(self):
         print("Experiment running...")
-        for drive_len in np.linspace(0, 500e-9, 101):
+
+        for drive_len in np.linspace(0, 500e-9, 501):
             self.drive_len = drive_len
-            self.result_t.append(drive_len)
-            self.pre_run()
+            runtime.logger.info(f"drive_len at {self.drive_len}s")
+            drive_I_waveform = waveform.Blank(98e-6 - self.drive_len).concat(waveform.DC(self.drive_len, self.drive_mod_power)).concat(waveform.Blank(1e-6))
+            runtime.logger.plot_waveform(I=drive_I_waveform, t_range=(97.5e-6, 98.1e-6))
+            self.drive_mod_I.write_waveform(drive_I_waveform)
+            self.drive_mod_Q.write_waveform(drive_I_waveform)
+            self.drive_mod_I.run()
+            self.drive_mod_Q.run()
+
+            runtime.logger.info(f"drive_freq at {self.drive_freq}Hz")
+            self.drive_src.setFreqAmp(self.drive_freq, self.drive_lo_power)
+            self.drive_src.RFON()
+            self.ATS9870.req(0, 1024, repeats=self.repeats)
             self.post_run()
+
 
     def get_amp_phase(self, freq, data, sample_rate=1e9):
         data_length = len(data)
