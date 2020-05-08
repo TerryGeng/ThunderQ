@@ -61,14 +61,20 @@ class AWGChannel:
         self.name = name
         self.AWG = AWG
         self.channel = channel
+        self.waveform = None
+        self.amplitude = 1
+        self.offset = 0
 
     def write_waveform(self, waveform: WaveForm):
+        self.waveform = waveform
         self.AWG.write_waveform(self.channel, waveform)
 
-    def set_offset(self, offset_voltage):
-        self.AWG.set_channel_offset(self.channel, offset_voltage)
+    def set_offset(self, offset_voltage_in_volts):
+        self.offset = offset_voltage_in_volts
+        self.AWG.set_channel_offset(self.channel, offset_voltage_in_volts)
 
     def set_amplitude(self, amplitude_in_volts):
+        self.amplitude = amplitude_in_volts
         self.AWG.set_channel_amp(self.channel, amplitude_in_volts)
 
     def run(self):

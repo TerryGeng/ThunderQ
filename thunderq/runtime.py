@@ -10,14 +10,18 @@ class Env(dict):
     def __setattr__(self, attr, value):
         self[attr] = value
 
+# ========== ThunderQ Runtime Options ==========
+
 runtime_initialized = False
 thunderboard_enable = True
 logger: Logger = None
 experiment_status: ExperimentStatus = None
 env: Env = None
 
-dry_run = False
+dry_run = True
 logging_level = "INFO"
+
+# ==============================================
 
 def runtime_initialize():
     global logger, experiment_status, env

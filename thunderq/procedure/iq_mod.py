@@ -85,8 +85,8 @@ class IQModulation(Procedure):
             if not self.target_freq or not self.mod_amp:
                 raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
-            sequence.set_AWG_channel_global_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
-            sequence.set_AWG_channel_global_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
+            sequence.set_channel_global_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
+            sequence.set_channel_global_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
 
             # Upper sideband is kept, in accordance with Orkesh's calibration
             self.mod_freq = self.target_freq - self.lo_freq

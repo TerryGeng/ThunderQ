@@ -98,7 +98,7 @@ class Sequence:
 
         return self.slices[name]
 
-    def set_AWG_channel_global_offset(self, channel_name, offset_in_volts):
+    def set_channel_global_offset(self, channel_name, offset_in_volts):
         self.AWG_channels[channel_name].set_offset(offset_in_volts)
 
     def setup(self):
@@ -200,18 +200,22 @@ class Sequence:
 
                 # draw waveform first
                 y = np.zeros(len(sample_points))
+                y_zero_pos = height
                 if channel_name in self.last_AWG_compiled_waveforms:
                     waveform = self.last_AWG_compiled_waveforms[channel_name]
-                    for t in range(len(sample_points)):
-                        if waveform and (trigger.raise_at <= sample_points[t] < trigger.raise_at + waveform.width):
-                            y[t] = waveform.at(sample_points[t] - trigger.raise_at)
-                        else:
-                            y[t] = 0
+                    y = waveform.thumbnail_sample(sample_points - trigger.raise_at)
+
+                    y = y + channel.offset
 
                     if y.max() - y.min() != 0:
+                        y_zero_pos = (- y.min()) / (y.max() - y.min()) + height
                         y = (y - y.min()) / (y.max() - y.min()) + height
                     else:
-                        y = y + height
+                        if -0.5 < y.max() < 0.5:
+                            y = y + height
+                        else:
+                            y = np.ones(len(sample_points)) * 0.5 + height if y.max() > 0 else \
+                                np.ones(len(sample_points)) * 0.5 - height
 
                     start_at_marker = trigger.raise_at * 1e6
                     end_at_marker = (trigger.raise_at + waveform.width) * 1e6
@@ -221,7 +225,10 @@ class Sequence:
                     y = y + height
 
                 ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
-                ax.annotate(channel_name, xy=(text_x, height + 0.5), fontsize=9, ha="right", va="center")
+                ax.plot([plot_sample_points[0], plot_sample_points[-1]], [y_zero_pos, y_zero_pos], color="dimgrey",
+                        linestyle="--", linewidth=0.8, alpha=0.7)
+
+                ax.annotate(channel_name, xy=(text_x, height), fontsize=9, ha="right", va="center")
                 height += 1.5
                 i += 1
 
@@ -234,7 +241,7 @@ class Sequence:
                     y[t] = height
 
             ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
-            ax.annotate(trigger.name, xy=(text_x, height + 0.5), fontsize=11,
+            ax.annotate(trigger.name, xy=(text_x, height), fontsize=11,
                         ha="right", va="center", fontweight="bold",
                         bbox=dict(fc='white', ec='black', boxstyle='square,pad=0.1'))
             i += 1

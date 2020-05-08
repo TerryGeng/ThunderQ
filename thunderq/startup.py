@@ -40,7 +40,7 @@ def run_queue_in_background():
 init_env_scripts = []
 def find_init_env_scripts():
     global init_env_scripts
-    init_env_scripts = [ f for f in os.listdir(".") if os.path.isfile(f)
+    init_env_scripts = [ "env/" + f for f in os.listdir("env") if os.path.isfile("env/" + f)
                      and f.startswith("init_env_") and f.endswith(".py") ]
     init_env_scripts.sort()
 

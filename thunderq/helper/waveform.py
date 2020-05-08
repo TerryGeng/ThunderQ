@@ -11,6 +11,7 @@
 
 # TODO: what is the amplitude? relative amplitude? volts? how to process them?
 
+from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
 from .iq_calibration_container import IQCalibrationContainer
@@ -51,6 +52,10 @@ class WaveForm:
             data = data / max_abs # Normalize
 
         return data, max_abs
+
+    def thumbnail_sample(self, sample_points):
+        # Used for generating sequence plot
+        return np.array([ self.at(time) for time in sample_points])
 
     def plot(self, sample_rate):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
@@ -110,7 +115,9 @@ class SumWave(WaveForm):
         return self
 
     def __str__(self):
-        return f"<SumWave, width: {self.width:e} s>\n  {self.wave1}\n  {self.wave2}"
+        return f"<SumWave, width: {self.width:e} s>\n" \
+               f"{indent(str(self.wave1), '  ')}\n" \
+               f"{indent(str(self.wave2), '  ')}"
 
 
 class CarryWave(WaveForm):
@@ -136,7 +143,9 @@ class CarryWave(WaveForm):
         return self
 
     def __str__(self):
-        return f"<CarryWave, width: {self.width:e} s>\n  {self.wave1}\n  {self.wave2}"
+        return f"<CarryWave, width: {self.width:e} s>\n" \
+               f"{indent(str(self.wave1), '  ')}\n" \
+               f"{indent(str(self.wave2), '  ')}"
 
 
 class Sequence(WaveForm):
@@ -177,10 +186,39 @@ class Sequence(WaveForm):
 
         return 0
 
+    def thumbnail_sample(self, sample_points):
+        result = np.zeros(len(sample_points))
+
+        sample_pos = 0
+        for i in range(len(self.each_waveform_start_at) - 1):
+            start_at = self.each_waveform_start_at[i]
+            next_start_at = self.each_waveform_start_at[i + 1]
+
+            while sample_points[sample_pos] < start_at:
+                result[sample_pos] = 0
+                sample_pos += 1
+
+            if sample_points[sample_pos] < next_start_at:
+                while sample_points[sample_pos] < next_start_at:
+                    result[sample_pos] = self.sequence[i].at(sample_points[sample_pos] - start_at)
+                    sample_pos += 1
+            else:
+                # If some waveform has width that is less than the resolution of sample_rate:
+                result[sample_pos] = self.sequence[i].at(
+                    (start_at + next_start_at) / 2 - start_at)
+                sample_pos += 1
+
+            if sample_pos == len(sample_points):
+                break
+
+        return result
+
+
+
     def __str__(self):
-        _str = "<Sequence, width: {self.width:e} s>"
+        _str = f"<Sequence, width: {self.width:e} s>\n"
         for seq in self.sequence:
-            _str += f"  {seq}\n"
+            _str += indent(str(seq), '  ') + "\n"
 
         return _str
 
@@ -268,6 +306,12 @@ class Gaussian(WaveForm):
 
 
 class CalibratedIQ(WaveForm):
+    # This class is designed to generated calibrated IQ waveform.
+    # Calibrated IQ carry wave is generated, and multiplied with (I_waveform + j * Q_waveform)
+    # WARNING: This class doesn't deal with channel voltage offset. You should manually set it.
+    #          since it should be applied to a channel in the entire time span to compensate the
+    #          LO leakage.
+
     def __init__(self,
                  carry_freq,
                  I_waveform: WaveForm=None,
@@ -330,7 +374,8 @@ class CalibratedIQ(WaveForm):
         raise TypeError("It's unwise to adjust the amplitude of a calibrated waveform.")
 
     def __str__(self):
-        return f"<CalibratedIQ, width: {self.width:e} s>\n  {self.carry_IQ}"
+        return f"<CalibratedIQ, width: {self.width:e} s>\n" \
+               f"{indent(str(self.carry_IQ), '  ')}"
 
 
 class Real(WaveForm):
