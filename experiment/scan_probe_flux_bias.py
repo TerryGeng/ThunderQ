@@ -105,7 +105,7 @@ class ScanProbeFluxBiasExperiment(Experiment):
             result_amps.append(result_amp)
 
             threading.Thread(target=self.make_plot_and_send,
-                             args=(self.cavity_sender, probe_point, result_amp,
+                             args=(self.cavity_sender, probe_points, result_amps,
                                    "Probe frequency / Hz", "Amp / arb.")).start()
 
         return result_amps
