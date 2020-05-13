@@ -173,7 +173,8 @@ class ScanProbeFluxBiasExperiment(Experiment):
         A, f, phi, C = self.fit_sin(self.flux_bias_results, self.cavity_shift_results)
         runtime.logger.log(f"sin fitting result: A={A}, T={1/f} V, phi={phi}, C={C} Hz.")
 
-        flux_at_probe_candidates = np.array([-phi-np.pi/2, -phi+np.pi/2, -np.pi+np.pi*3/2, 2*np.pi-np.pi*3/2])/(2*np.pi*f)
+        flux_at_probe_candidates = np.array(
+            [-phi-np.pi/2, -phi+np.pi/2, -np.pi+np.pi*3/2, 2*np.pi-np.pi*3/2])/(2*np.pi*f)
         flux_at_probe_candidate = flux_at_probe_candidates[np.argmin(abs(flux_at_probe_candidates))]
         runtime.logger.success(f"Find optimal bias flux: {flux_at_probe_candidate} V.")
 
