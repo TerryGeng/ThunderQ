@@ -7,6 +7,7 @@ from thunderq.driver.ASG import ASG
 from thunderq.procedure import IQModulation
 import thunderq.runtime as runtime
 
+
 class IQModProbe(IQModulation):
     def __init__(self,
                  probe_mod_slice_name: str,
@@ -61,8 +62,10 @@ class IQModProbe(IQModulation):
         Q_amp_avg = Q_amp_sum / self.repeat
         Q_phase_avg = Q_phase_sum / self.repeat # I_phase_avg should almost equal to Q_phase_avg
 
-        self.result_amp = np.sqrt(I_amp_avg**2 + Q_amp_avg**2)
-        self.result_phase = np.arctan2(Q_amp_avg, I_amp_avg)
+        # self.result_amp = np.sqrt(I_amp_avg**2 + Q_amp_avg**2)
+        # self.result_phase = np.arctan2(Q_amp_avg, I_amp_avg)
+        self.result_amp = (I_amp_avg**2 + Q_amp_avg**2) / 2
+        self.result_phase = (Q_amp_avg + np.pi/2 + I_amp_avg) / 2
 
     def last_result(self):
         return self.result_amp, self.result_phase

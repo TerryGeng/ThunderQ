@@ -48,7 +48,7 @@ class CavitySweepExperiment(Sweep1DExperiment):
             acquisition_slice_name="acquisition",
             acquisition_dev=runtime.env.acquisition_dev,
             mod_IQ_calibration=read_IQ_calibrate_file(
-                "F:\\0_MEASUREMENT\\1_MeasurementProcess\\0_Calibration\\1_S2_IQ\\5_phase_and_time_offset_calibration_with_MOD1\\S2_IQ_ATT1.txt")
+                "data/S2_IQ_ATT1.txt")
         )
 
         self.probe_procedure.repeat = 200
@@ -77,11 +77,12 @@ class CavitySweepExperiment(Sweep1DExperiment):
             self.sequence_sent = True
 
 
-cavity_exp = CavitySweepExperiment()
-cavity_exp.sweep(
-    parameter_name="probe_freq",
-    parameter_unit="Hz",
-    points=np.linspace(cavity_exp.center_probe_freq - 0.005e9, cavity_exp.center_probe_freq + 0.005e9, 100),
-    result_name="result_amp",
-    result_unit="arb."
-)
+def run():
+    cavity_exp = CavitySweepExperiment()
+    cavity_exp.sweep(
+        parameter_name="probe_freq",
+        parameter_unit="Hz",
+        points=np.linspace(cavity_exp.center_probe_freq - 0.005e9, cavity_exp.center_probe_freq + 0.005e9, 100),
+        result_name="result_amp",
+        result_unit="arb."
+    )

@@ -99,11 +99,12 @@ class RabiExperiment(Sweep1DExperiment):
         self.sequence_sender.send(self.sequence.plot())
 
 
-rabi_exp = RabiExperiment()
-rabi_exp.sweep(
-    parameter_name="drive_len",
-    parameter_unit="s",
-    points=np.linspace(0, 500e-9, 501),
-    result_name="result_amp",
-    result_unit="arb."
-)
+def run():
+    rabi_exp = RabiExperiment()
+    rabi_exp.sweep(
+        parameter_name="drive_len",
+        parameter_unit="s",
+        points=np.linspace(0, 500e-9, 501),
+        result_name="result_amp",
+        result_unit="arb."
+    )

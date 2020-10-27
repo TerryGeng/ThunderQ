@@ -6,13 +6,14 @@ from thunderq.helper.sequence import Sequence
 from thunderq.procedure import Procedure
 import thunderq.runtime as runtime
 
+
 class IQModulation(Procedure):
     def __init__(self,
                  mod_slice_name: str,
                  mod_I_name: str,
                  mod_Q_name: str,
                  lo_dev: ASG,
-                 mod_IQ_calibration: IQCalibrationContainer=None
+                 mod_IQ_calibration: IQCalibrationContainer = None
                  ):
         super().__init__("IQ Modulation")
         self.mod_slice = mod_slice_name
@@ -25,11 +26,11 @@ class IQModulation(Procedure):
 
         self.mod_IQ_calibration = mod_IQ_calibration
 
-        self.lo_freq = mod_IQ_calibration.lo_freq # Hz, the suggested value of current calibration
+        self.lo_freq = mod_IQ_calibration.lo_freq  # Hz, the suggested value of current calibration
         self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
 
         self.mod_freq = 50e6  # Hz, will be overridden given a probe frequency
-        self.mod_amp = mod_IQ_calibration.mod_amp # V, the suggested value of current calibration
+        self.mod_amp = mod_IQ_calibration.mod_amp  # V, the suggested value of current calibration
 
         self.target_freq = None
 
@@ -65,14 +66,13 @@ class IQModulation(Procedure):
         if after_mod_padding is not None:
             self.after_mod_padding = after_mod_padding
 
-
     def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
         IQ_waveform = waveform.CalibratedIQ(mod_freq,
                                             I_waveform=dc_waveform,
                                             IQ_cali=self.mod_IQ_calibration,
-                                            down_conversion=False) # Use up conversion
+                                            down_conversion=False)  # Use up conversion
 
         if self.after_mod_padding:
             return waveform.Real(IQ_waveform).concat(waveform.Blank(self.after_mod_padding)), \
@@ -90,8 +90,8 @@ class IQModulation(Procedure):
 
             # Upper sideband is kept, in accordance with Orkesh's calibration
             self.mod_freq = self.target_freq - self.lo_freq
-            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq/1e9} GHz, "
-                                f"MOD freq {self.mod_freq/1e9} GHz, "
+            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq / 1e9} GHz, "
+                                f"MOD freq {self.mod_freq / 1e9} GHz, "
                                 f"MOD amp {self.mod_amp} V, "
                                 f"MOD len {self.mod_len} s.")
             self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
@@ -111,4 +111,3 @@ class IQModulation(Procedure):
 
     def post_run(self):
         pass
-

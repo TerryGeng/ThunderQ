@@ -5,6 +5,7 @@ from matplotlib.figure import Figure
 
 from thunder_board import clients
 
+
 class Logger:
     # logging_level: from less verbose to more verbose: ERROR, WARNING, INFO, DEBUG
     def __init__(self, thunderboard=True, logging_level="INFO"):
@@ -42,7 +43,7 @@ class Logger:
         if self.logging_level == "DEBUG":
             msg = self._log_stamp("DEBUG") + msg
             print(msg)
-            self.send_log("<span class='text-muted'>" + msg  + "</span>")
+            self.send_log("<span class='text-muted'>" + msg + "</span>")
 
     def log(self, msg):
         self.info(msg)
@@ -57,19 +58,19 @@ class Logger:
         if self.logging_level in ['DEBUG', 'INFO']:
             msg = self._log_stamp("INFO") + msg
             print(msg)
-            self.send_log("<span class='text-success'>" + msg  + "</span>")
+            self.send_log("<span class='text-success'>" + msg + "</span>")
 
     def warning(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING']:
             msg = self._log_stamp("WARNING") + msg
             print(msg)
-            self.send_log("<span class='text-warning'>" + msg  + "</span>")
+            self.send_log("<span class='text-warning'>" + msg + "</span>")
 
     def error(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
             msg = self._log_stamp("ERROR") + msg
             print(msg)
-            self.send_log("<span class='text-danger'>" + msg  + "</span>")
+            self.send_log("<span class='text-danger'>" + msg + "</span>")
 
     def plot(self, fig):
         if self.plot_sender:
@@ -94,7 +95,7 @@ class Logger:
 
         fig = Figure(figsize=(8, 4))
         ax = fig.subplots(1, 1)
-        colors = ["blue",  "crimson",  "orange", "forestgreen", "dodgerblue"]
+        colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
         i = 0
         for key, waveform in kwargs.items():
             if key in param_list:
@@ -106,12 +107,11 @@ class Logger:
                 sample_points = np.arange(0, waveform.width, 1.0 / sample_rate)
 
             samples = [waveform.at(sample_point) for sample_point in sample_points]
-            ax.plot(sample_points, samples, label=key, color=colors[ i % len(colors) ])
+            ax.plot(sample_points, samples, label=key, color=colors[i % len(colors)])
             i += 1
 
         fig.set_tight_layout(True)
         self.plot(fig)
-
 
 
 class ExperimentStatus:
@@ -131,7 +131,7 @@ class ExperimentStatus:
             'start_at': _time,
             'name': experiment_name,
             'status': None
-        } )
+        })
         print(f"[{_time}] *** Enter experiment: {experiment_name} ***")
         self._send_status()
 

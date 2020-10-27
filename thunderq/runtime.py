@@ -17,7 +17,7 @@ logger: Logger = None
 experiment_status: ExperimentStatus = None
 env: Env = None
 
-dry_run = False
+dry_run = True
 logging_level = "INFO"
 
 # ==============================================

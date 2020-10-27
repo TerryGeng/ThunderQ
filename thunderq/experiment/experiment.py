@@ -45,6 +45,7 @@ class Experiment:
 
     def update_status(self, msg):
         runtime.experiment_status.update_status(msg)
+        runtime.logger.info("Experiment status updated: " + msg)
 
     #@run_wrapper
     def run(self):

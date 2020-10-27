@@ -34,13 +34,18 @@ else:
     SD_TriggerModes.EXTTRIG = "SD_TriggerModes.EXTTRIG"
 
 
-## Arbitary Waveform Generator
 class AWG:
+    # Arbitrary Waveform Generator
+
     def __init__(self, _name, _sample_rate):
         self.name = _name
         self.sample_rate = _sample_rate
 
     def write_waveform(self, channel, waveform: WaveForm):
+        wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
+        self.write_raw_waveform(channel, amplitude, wave_data)
+
+    def write_raw_waveform(self, channel, amplitude, raw_waveform):
         raise NotImplementedError
 
     def set_channel_offset(self, channel, offset_voltage):
@@ -107,15 +112,11 @@ class AWG_M3202A(AWG):
 
         runtime.logger.debug("ATS9870: Initialized.")
 
-    def write_waveform(self, channel, waveform: WaveForm):
+    def write_raw_waveform(self, channel, amplitude, raw_waveform):
         sd_wave = SD_Wave()
-        wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
 
         # Bug / feature of M3020A. 16 zeros have to be appended to mark as the end of the waveform.
-        wave_data = np.concatenate((wave_data, np.zeros(16)))
-
-        if amplitude > 1.5:
-            raise ValueError(f"Waveform Amplitude Too Large! {amplitude}V is given, while the maximum for M3202A is 1.5V.")
+        wave_data = np.concatenate((raw_waveform, np.zeros(16)))
 
         sd_wave.newFromArrayDouble(SD_WaveformTypes.WAVE_ANALOG, wave_data)
         self.dev.waveformLoad(sd_wave, waveformNumber=channel)
@@ -126,6 +127,17 @@ class AWG_M3202A(AWG):
                                   startDelay=0,
                                   cycles=1,
                                   prescaler=0)
+
+    def write_waveform(self, channel, waveform: WaveForm):
+        wave_data, amplitude = waveform.normalized_sample(self.sample_rate, min_unit=16)
+
+        # Bug / feature of M3020A. 16 zeros have to be appended to mark as the end of the waveform.
+        wave_data = np.concatenate((wave_data, np.zeros(16)))
+
+        if amplitude > 1.5:
+            raise ValueError(f"Waveform Amplitude Too Large! {amplitude}V is given, while the maximum for M3202A is 1.5V.")
+
+        self.write_raw_waveform(channel, amplitude, wave_data)
 
     def set_channel_offset(self, channel, offset_voltage):
         self.dev.channelOffset(channel, offset_voltage)

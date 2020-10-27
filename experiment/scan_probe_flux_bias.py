@@ -3,6 +3,9 @@ from thunderq.experiment import Experiment, run_wrapper
 import thunderq.runtime as runtime
 import numpy as np
 import matplotlib as mpl
+import pickle
+import time
+
 mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
@@ -49,8 +52,8 @@ class ScanProbeFluxBiasExperiment(Experiment):
         self.flux_bias_results = []
         self.cavity_shift_results = []
 
-        self._cavity_amps_results = []
-        self._cavity_freqs_results = []
+        self.cavity_amps_results = []
+        self.cavity_freqs_results = []
 
         # =============================
         #        Init procedures
@@ -90,7 +93,7 @@ class ScanProbeFluxBiasExperiment(Experiment):
     def set_flux_bias(self, flux_bias):
         # self.flux_bias_procedure.set_bias_at_slice("drive_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
         # self.flux_bias_procedure.set_bias_at_slice("probe_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
-        self.flux_bias_procedure.set_bias_at_slice("flux_mod", { self.flux_channel_to_scan: flux_bias })
+        self.flux_bias_procedure.set_bias_at_slice("flux_mod", {self.flux_channel_to_scan: flux_bias})
 
     def sweep_cavity(self, probe_points):
         import threading
@@ -126,44 +129,49 @@ class ScanProbeFluxBiasExperiment(Experiment):
         result_amps = self.sweep_cavity(probe_points)
 
         # sanity check, to see if we got a cavity dip
-        #f0, A, gamma, C = self.fit_cavity(probe_points, result_amps)
+        # f0, A, gamma, C = self.fit_cavity(probe_points, result_amps)
 
-        probe_freq_ref = self.find_steepest(probe_points, result_amps) # refine probe reference freq
+        probe_freq_ref, slope_ref = self.find_steepest(probe_points, result_amps)  # refine probe reference freq
+
         probe_freq_predict = probe_freq_ref
+        # in this design, I predict next cavity dip, and only scan the interval near last probe_freq
 
+        # add the result of initial scan to the result list.
         self.flux_bias_results.append(flux_scan_start_at)
-        self._cavity_freqs_results.append(probe_points)
-        self._cavity_amps_results.append(result_amps)
+        self.cavity_freqs_results.append(probe_points)
+        self.cavity_amps_results.append(result_amps)
         self.cavity_shift_results.append(0)
 
         # === 1. Scan
         flux_points_to_scan = np.arange(flux_scan_start_at + self.flux_scan_step,  # drop the first point
                                         max(self.flux_scan_range),
                                         self.flux_scan_step)
+        runtime.logger.info("Flux point to scan: " + str(flux_points_to_scan))
 
-
-        assert len(flux_points_to_scan) > 10, "Check your flux bound and step."
+        assert len(flux_points_to_scan) > 10, "Check your flux bound and step. I got too less points to scan."
 
         for flux_point in flux_points_to_scan:
-            runtime.logger.info(f"predicted probe freq {probe_freq_predict} Hz.")
+            runtime.logger.info(f"Predicted probe freq {probe_freq_predict} Hz.")
             self.update_status(f"Scanning for cavity shift vs. flux bias. Flux bias at {flux_point} V.")
-            probe_points = np.linspace(probe_freq_predict - self.probe_scan_width/2,
-                                       probe_freq_predict + self.probe_scan_width/2,
+            probe_points = np.linspace(probe_freq_predict - self.probe_scan_width / 2,
+                                       probe_freq_predict + self.probe_scan_width / 2,
                                        self.probe_scan_points)
             self.set_flux_bias(flux_point)
             result_amps = self.sweep_cavity(probe_points)
 
             shift_from_last_time = self.calc_shift_in_GHz(probe_points, result_amps,
-                                                          self._cavity_freqs_results[-1],
-                                                          self._cavity_amps_results[-1]) * 1e9
+                                                          self.cavity_freqs_results[-1],
+                                                          self.cavity_amps_results[-1]) * 1e9
             total_shift = self.cavity_shift_results[-1] + shift_from_last_time
 
             self.flux_bias_results.append(flux_point)
-            self._cavity_freqs_results.append(probe_points)
-            self._cavity_amps_results.append(result_amps)
+            self.cavity_freqs_results.append(probe_points)
+            self.cavity_amps_results.append(result_amps)
             self.cavity_shift_results.append(total_shift)
 
-            probe_freq_predict += shift_from_last_time
+            # probe_freq_predict += shift_from_last_time
+            probe_freq_predict, new_slope = self.find_steepest(probe_points, result_amps)  # refresh probe reference freq
+            assert abs((new_slope - slope_ref) / slope_ref) > 0.1, "Strange dip shape. I missed the dip?"
 
             threading.Thread(target=self.make_plot_and_send,
                              args=(self.main_sender, self.flux_bias_results, self.cavity_shift_results,
@@ -171,58 +179,60 @@ class ScanProbeFluxBiasExperiment(Experiment):
 
         # === 2. Fitting flux vs. probe freq curve, find optimal flux at probe
         A, f, phi, C = self.fit_sin(self.flux_bias_results, self.cavity_shift_results)
-        runtime.logger.log(f"sin fitting result: A={A}, T={1/f} V, phi={phi}, C={C} Hz.")
+        runtime.logger.log(f"sin fitting result: A={A}, T={1 / f} V, phi={phi}, C={C/1e9} GHz.")
 
         flux_at_probe_candidates = np.array(
-            [-phi-np.pi/2, -phi+np.pi/2, -np.pi+np.pi*3/2, 2*np.pi-np.pi*3/2])/(2*np.pi*f)
+            [-phi - np.pi / 2, -phi + np.pi / 2, -np.pi + np.pi * 3 / 2, 2 * np.pi - np.pi * 3 / 2]) / (2 * np.pi * f)
         flux_at_probe_candidate = flux_at_probe_candidates[np.argmin(abs(flux_at_probe_candidates))]
         runtime.logger.success(f"Find optimal bias flux: {flux_at_probe_candidate} V.")
 
         # === 3. Scan at optimal flux
         self.update_status(f"Found optimal flux at probe {flux_at_probe_candidate} V. "
                            f"Scanning at this point.")
-        probe_freq_predict = probe_freq_ref + A * np.sin(2*np.pi*f*flux_at_probe_candidate + phi) + C
+        probe_freq_predict = probe_freq_ref + A * np.sin(2 * np.pi * f * flux_at_probe_candidate + phi) + C
         probe_points = np.linspace(probe_freq_predict - self.probe_scan_width / 2,
                                    probe_freq_predict + self.probe_scan_width / 2,
                                    self.probe_scan_points)
         self.set_flux_bias(flux_at_probe_candidate)
         result_amps = self.sweep_cavity(probe_points)
-        new_probe_freq_ref = self.find_steepest(probe_points, result_amps) # refine probe reference freq
-        runtime.logger.success(f"Find optimal probe frequence: {new_probe_freq_ref} Hz.")
+        new_probe_freq_ref, new_slope = self.find_steepest(probe_points, result_amps)  # refine probe reference freq
+        assert abs((new_slope - slope_ref) / slope_ref) > 0.1, "Strange dip shape. I missed the dip?"
+
+        runtime.logger.success(f"Find optimal probe frequency: {new_probe_freq_ref} Hz.")
 
         fitting_bias = np.linspace(self.flux_bias_results[0], self.flux_bias_results[-1], 200)
-        fitting_shifts = A * np.sin(2*np.pi*f*fitting_bias + phi) + C
+        fitting_shifts = A * np.sin(2 * np.pi * f * fitting_bias + phi) + C + probe_freq_ref
 
         fig = Figure(figsize=(8, 4))
         ax = fig.subplots(1, 1)
         ax.plot(self.flux_bias_results, self.cavity_shift_results, marker='x', markersize=4, linewidth=1, color="blue")
         ax.plot(fitting_bias, fitting_shifts, marker='x', markersize=4, linewidth=1, color="orange")
-        ax.plot([flux_at_probe_candidate], [new_probe_freq_ref - probe_freq_ref], marker="o", markersize=4, color="red")
+        ax.scatter([flux_at_probe_candidate], [new_probe_freq_ref], marker="o", size=50, color="red")
         ax.set_xlabel("Flux bias / V")
         ax.set_ylabel("Cavity frequency shift / Hz")
         fig.set_tight_layout(True)
-
-
 
     # ==================================
     #       Data process utilities
     # ==================================
 
-    def find_steepest(self, xs, ys_raw):
+    @staticmethod
+    def find_steepest(xs, ys_raw):
         from scipy.ndimage import gaussian_filter
         ys = gaussian_filter(ys_raw, sigma=1)
         _xs = np.zeros(len(xs) - 1)
         _ks = np.zeros(len(xs) - 1)
 
         for i in range(0, len(xs) - 1):
-            _xs[i] = 0.5 * (xs[i] + xs[i+1])
-            _ks[i] = abs((ys[i+1] - ys[i])/(xs[i+1] - xs[i]))
+            _xs[i] = 0.5 * (xs[i] + xs[i + 1])
+            _ks[i] = abs((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]))
 
         steepest_i = np.argmax(_ks)
 
-        return _xs[steepest_i]
+        return _xs[steepest_i], _ks[steepest_i]
 
-    def calc_shift_in_GHz(self, x1, y1, x2, y2):
+    @staticmethod
+    def calc_shift_in_GHz(x1, y1, x2, y2):
         # Find x1 + ? = x2
         # Q: Why work at GHz? A: minimize function will fail without 1e9.
 
@@ -250,14 +260,15 @@ class ScanProbeFluxBiasExperiment(Experiment):
         print((max_shift_neg, max_shift_pos))
         min_shift = minimize(avg_error, x0=(0,), bounds=[(max_shift_neg, max_shift_pos)])
 
-        return min_shift
+        return min_shift.x[0]
 
-    def fit_sin(self, xs, ys):
+    @staticmethod
+    def fit_sin(xs, ys):
         from scipy.optimize import curve_fit
         import numpy as np
 
         def _sin(x, A, f, phi, C):
-            return A*np.sin(2*np.pi*f*x + phi) + C
+            return A * np.sin(2 * np.pi * f * x + phi) + C
 
         # Guess first
         A = max(ys) - min(ys)
@@ -269,11 +280,12 @@ class ScanProbeFluxBiasExperiment(Experiment):
 
         A, f, phi, C = popt
 
-        phi = phi - int(phi/(2*np.pi)) * 2*np.pi
+        phi = phi - int(phi / (2 * np.pi)) * 2 * np.pi
 
         return A, f, phi, C
 
-    def fit_cavity(self, freq_list, amp_list):
+    @staticmethod
+    def fit_cavity(freq_list, amp_list):
         from scipy.ndimage import gaussian_filter
         from scipy.optimize import curve_fit
 
@@ -292,7 +304,7 @@ class ScanProbeFluxBiasExperiment(Experiment):
 
         # Infer primitive params
         half_height = 0.5 * min(amp_list) + 0.5 * max(amp_list)
-        #sp21_dip_list = amp_list[amp_list < half_height]
+        # sp21_dip_list = amp_list[amp_list < half_height]
         freq_dip_list = freq_list[amp_list < half_height]
         half_width = 0.5 * (freq_dip_list[-1] - freq_dip_list[1])
         min_index = np.argmin(amp_list)
@@ -312,7 +324,8 @@ class ScanProbeFluxBiasExperiment(Experiment):
 
         return popt
 
-    def make_plot_and_send(self, sender, xs, ys, xlabel="", ylabel=""):
+    @staticmethod
+    def make_plot_and_send(sender, xs, ys, xlabel="", ylabel=""):
         from matplotlib.figure import Figure
 
         fig = Figure(figsize=(8, 4))
@@ -324,3 +337,14 @@ class ScanProbeFluxBiasExperiment(Experiment):
         sender.send(fig)
 
 
+def run():
+    exp = ScanProbeFluxBiasExperiment()
+    exp.run()
+
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    pickle.dump({
+        'flux_bias': exp.flux_bias_results,
+        'cavity_shift': exp.cavity_shift_results,
+        'cavity_amps': exp.cavity_amps_results,
+        'cavity_freqs': exp.cavity_freqs_results
+    }, f'data/ScanProbeFluxBias_{timestamp}')
