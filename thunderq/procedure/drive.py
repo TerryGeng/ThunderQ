@@ -1,10 +1,6 @@
-import numpy as np
-from thunderq.helper import waveform as waveform
-from thunderq.helper.sequence import Sequence
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.driver.ASG import ASG
 from thunderq.procedure import IQModulation
-import thunderq.runtime as runtime
 
 
 class IQModDrive(IQModulation):
@@ -18,19 +14,53 @@ class IQModDrive(IQModulation):
 
         super().__init__(drive_mod_slice_name, drive_mod_I_name, drive_mod_Q_name, drive_lo_dev, mod_IQ_calibration)
         self.name = "IQ Modulated Drive"
-        self.set_drive_params(after_drive_padding=2e-6)
+        self.after_drive_padding = 2e-6
 
-    def set_drive_params(self,
-                         drive_freq=None,
-                         drive_len=None,
-                         drive_mod_amp=None,
-                         drive_lo_power=None,
-                         drive_lo_freq=None,
-                         after_drive_padding=None):
-        super().set_mod_params(target_freq=drive_freq,
-                               mod_len=drive_len,
-                               mod_amp=drive_mod_amp,
-                               lo_power=drive_lo_power,
-                               lo_freq=drive_lo_freq,
-                               after_mod_padding=after_drive_padding)
+    @property
+    def drive_freq(self):
+        return super().target_freq
+
+    @drive_freq.setter
+    def drive_freq(self, value):
+        super().target_freq = value
+
+    @property
+    def after_drive_padding(self):
+        return super().after_mod_padding
+
+    @after_drive_padding.setter
+    def after_drive_padding(self, value):
+        super().after_mod_padding = value
+
+    @property
+    def drive_lo_freq(self):
+        return super().lo_freq
+
+    @drive_lo_freq.setter
+    def drive_lo_freq(self, value):
+        super().lo_freq = value
+
+    @property
+    def drive_lo_power(self):
+        return super().lo_power
+
+    @drive_lo_power.setter
+    def drive_lo_power(self, value):
+        super().lo_power = value
+
+    @property
+    def drive_len(self):
+        return super().mod_len
+
+    @drive_len.setter
+    def drive_len(self, value):
+        super().mod_len = value
+
+    @property
+    def drive_mod_amp(self):
+        return super().mod_amp
+
+    @drive_mod_amp.setter
+    def drive_mod_amp(self, value):
+        super().mod_amp = value
 

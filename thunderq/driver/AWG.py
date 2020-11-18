@@ -2,14 +2,14 @@ import numpy as np
 
 import thunderq.runtime as runtime
 
-from ..helper.waveform import WaveForm, CalibratedIQ
+from thunderq.waveform.waveform import WaveForm
 
 if not runtime.dry_run:
-    import path_to_devices
     from keysightSD1 import SD_AOU, SD_Wave, SD_Waveshapes, SD_TriggerExternalSources, SD_TriggerBehaviors, \
        SD_WaveformTypes, SD_TriggerModes # importing Orkesh's device interface
 else:
     from .dummy import Dummy
+
     class SD_AOU(Dummy):
         def __init__(self):
             super().__init__("SD_AOU")

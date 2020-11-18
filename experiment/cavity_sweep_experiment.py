@@ -1,29 +1,15 @@
-from thunderq.experiment import Sweep1DExperiment
 import numpy as np
 
+from thunder_board.clients import PlotClient
+import thunderq.runtime as runtime
+from thunderq.experiment import Sweep1DExperiment, Cycle
+from thunderq.procedure import IQModProbe, FluxDynamicBias
+from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
 
-class CavitySweepExperiment(Sweep1DExperiment):
+
+class CavitySweepCycle(Cycle):
     def __init__(self):
         super().__init__("Probe Experiment")
-
-        import numpy as np
-        from thunderq.helper.sequence import Sequence
-        import thunderq.runtime as runtime
-        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
-
-        # Check if everything is up.
-        # from thunderq.driver.AWG import AWG_M3202A
-        # from thunderq.driver.ASG import ASG_E8257C
-        # from thunderq.driver.acqusition import Acquisition_ATS9870
-        # from thunderq.driver.trigger import TriggerDG645
-        # assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
-        # assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-        # assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-        # assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
-        # assert isinstance(runtime.env.sequence, Sequence)
-
-        from thunderq.procedure import IQModProbe, FluxDynamicBias
-        from thunder_board.clients import PlotClient
 
         self.center_probe_freq = 7.0645e9
 

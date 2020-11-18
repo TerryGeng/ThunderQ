@@ -1,13 +1,7 @@
-import time
-import functools
-
-from thunder_board import senders
-
-import thunderq.runtime as runtime
 from thunderq.procedure import Procedure
-from thunderq.helper.sequence import Sequence
 
-class Experiment:
+
+class Cycle:
     def __init__(self, name):
         self.name = name
         self.procedures = []
@@ -33,31 +27,18 @@ class Experiment:
     def clear_procedures(self):
         self.procedures.clear()
 
-    def run_single_shot(self):
+    def run(self):
         for procedure in self.procedures:
             assert isinstance(procedure, Procedure)
             procedure.pre_run(self.sequence)
 
         self.run_sequence()
 
+        results = {}
+
         for procedure in self.procedures:
-            procedure.post_run()
+            ret = procedure.post_run()
+            if ret:
+                results.update(ret)
 
-    def update_status(self, msg):
-        runtime.experiment_status.update_status(msg)
-        runtime.logger.info("Experiment status updated: " + msg)
-
-    #@run_wrapper
-    def run(self):
-        raise NotImplementedError
-
-
-
-def run_wrapper(run_func):
-    @functools.wraps(run_func)
-    def wrapper(self: Experiment):
-        runtime.experiment_status.experiment_enter(self.name)
-        run_func(self)
-        runtime.experiment_status.experiment_exit()
-
-    return wrapper
+        return results

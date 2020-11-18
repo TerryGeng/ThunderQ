@@ -1,5 +1,5 @@
 import numpy as np
-from . import waveform
+from ..waveform import waveform
 from ..driver.AWG import AWGChannel
 from ..driver.DC_source import DCChannel
 

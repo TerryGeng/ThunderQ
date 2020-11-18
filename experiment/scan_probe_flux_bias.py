@@ -1,5 +1,5 @@
 # Avoiding reinit, if this code is run by exec()
-from thunderq.experiment import Experiment, run_wrapper
+from thunderq.experiment import Cycle, run_wrapper
 import thunderq.runtime as runtime
 import numpy as np
 import matplotlib as mpl
@@ -10,7 +10,7 @@ mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
 
-class ScanProbeFluxBiasExperiment(Experiment):
+class ScanProbeFluxBiasExperiment(Cycle):
     def __init__(self):
         import numpy as np
         from thunderq.helper.sequence import Sequence
@@ -121,7 +121,7 @@ class ScanProbeFluxBiasExperiment(Experiment):
         flux_scan_start_at = self.flux_scan_range[0]
 
         # === 0. Scan at init point
-        self.update_status(f"Perform initial scan, flux bias at {flux_scan_start_at} V.")
+        runtime.update_experiment_status(f"Perform initial scan, flux bias at {flux_scan_start_at} V.")
         self.set_flux_bias(flux_scan_start_at)
         probe_points = np.linspace(self.init_probe_freq - self.probe_scan_width / 2,
                                    self.init_probe_freq + self.probe_scan_width / 2,
@@ -152,7 +152,7 @@ class ScanProbeFluxBiasExperiment(Experiment):
 
         for flux_point in flux_points_to_scan:
             runtime.logger.info(f"Predicted probe freq {probe_freq_predict} Hz.")
-            self.update_status(f"Scanning for cavity shift vs. flux bias. Flux bias at {flux_point} V.")
+            runtime.update_experiment_status(f"Scanning for cavity shift vs. flux bias. Flux bias at {flux_point} V.")
             probe_points = np.linspace(probe_freq_predict - self.probe_scan_width / 2,
                                        probe_freq_predict + self.probe_scan_width / 2,
                                        self.probe_scan_points)
@@ -187,8 +187,8 @@ class ScanProbeFluxBiasExperiment(Experiment):
         runtime.logger.success(f"Find optimal bias flux: {flux_at_probe_candidate} V.")
 
         # === 3. Scan at optimal flux
-        self.update_status(f"Found optimal flux at probe {flux_at_probe_candidate} V. "
-                           f"Scanning at this point.")
+        runtime.update_experiment_status(f"Found optimal flux at probe {flux_at_probe_candidate} V. "
+                                         f"Scanning at this point.")
         probe_freq_predict = probe_freq_ref + A * np.sin(2 * np.pi * f * flux_at_probe_candidate + phi) + C
         probe_points = np.linspace(probe_freq_predict - self.probe_scan_width / 2,
                                    probe_freq_predict + self.probe_scan_width / 2,

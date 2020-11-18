@@ -1,30 +1,15 @@
 import numpy as np
 import threading
 from thunderq.experiment import Sweep1DExperiment
+from thunderq.experiment.cycle import Cycle
+from thunderq.procedure import IQModProbe, IQModDrive, FluxDynamicBias
 import thunderq.runtime as runtime
+from thunder_board.clients import PlotClient
 
-# Avoiding reinit, if this code is run by exec()
 
-class RabiExperiment(Sweep1DExperiment):
+class RabiCycle(Cycle):
     def __init__(self):
         super().__init__("Rabi Experiment")
-
-        from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
-        from thunderq.procedure import IQModProbe, IQModDrive, FluxDynamicBias
-        import thunderq.runtime as runtime
-        from thunder_board.clients import PlotClient
-
-        # Check if everything is up.
-        # from thunderq.helper.sequence import Sequence
-        # from thunderq.driver.AWG import AWG_M3202A
-        # from thunderq.driver.ASG import ASG_E8257C
-        # from thunderq.driver.acquisition import Acquisition_ATS9870
-        # from thunderq.driver.trigger import TriggerDG645
-        # assert isinstance(runtime.env.probe_mod_dev, AWG_M3202A)
-        # assert isinstance(runtime.env.trigger_dev, TriggerDG645)
-        # assert isinstance(runtime.env.probe_lo_dev, ASG_E8257C)
-        # assert isinstance(runtime.env.acquisition_dev, Acquisition_ATS9870)
-        # assert isinstance(runtime.env.sequence, Sequence)
 
         self.drive_len = 0
         self.drive_amp = 1.4  # Volts
@@ -58,13 +43,10 @@ class RabiExperiment(Sweep1DExperiment):
             probe_lo_dev=runtime.env.probe_lo_dev,
             acquisition_slice_name="acquisition",
             acquisition_dev=runtime.env.acquisition_dev,
-            mod_IQ_calibration=read_IQ_calibrate_file(
-                "data/S2_IQ_ATT1.txt")
-            # TODO: be cautious! this file may contain apparent errors! like phase shift insanely large.
         )
 
         self.probe_procedure.repeat = 200
-        self.probe_procedure.set_probe_params(self.probe_freq)
+        self.probe_procedure.probe_freq = self.probe_freq
         self.add_procedure(self.probe_procedure)
 
         # Realtime result
@@ -76,21 +58,6 @@ class RabiExperiment(Sweep1DExperiment):
 
         self.sequence = runtime.env.sequence
 
-    def update_parameters(self):
-        runtime.logger.warning("Rabi update drive len" + str(self.drive_len))
-        self.drive_procedure.set_drive_params(drive_freq=self.drive_freq,
-                                              drive_len=self.drive_len,
-                                              drive_mod_amp=self.drive_amp,
-                                              drive_lo_power=self.drive_lo_power,
-                                              drive_lo_freq=self.drive_freq)
-
-    def retrieve_data(self):
-        self.result_amp, self.result_phase = self.probe_procedure.last_result()
-
-        runtime.logger.plot_waveform(I=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_I'],
-                                     Q=runtime.env.sequence.last_AWG_compiled_waveforms['drive_mod_Q'],
-                                     t_range=(97e-6, 98.1e-6))
-
     def run_sequence(self):
         super().run_sequence()
         threading.Thread(target=self.send_sequence_plot).start()
@@ -100,11 +67,13 @@ class RabiExperiment(Sweep1DExperiment):
 
 
 def run():
-    rabi_exp = RabiExperiment()
-    rabi_exp.sweep(
+    rabi_cycle = RabiCycle()
+    rabi_experiment = Sweep1DExperiment("Rabi Experiment", rabi_cycle)
+
+    rabi_experiment.sweep(
         parameter_name="drive_len",
         parameter_unit="s",
         points=np.linspace(0, 500e-9, 501),
-        result_name="result_amp",
+        result_name="amplitude",
         result_unit="arb."
     )

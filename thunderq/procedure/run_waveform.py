@@ -1,7 +1,7 @@
-from thunderq.helper.waveform import WaveForm
+from thunderq.waveform.waveform import WaveForm
 from thunderq.helper.sequence import Sequence
 from thunderq.procedure import Procedure
-import thunderq.runtime as runtime
+
 
 class RunWaveform(Procedure):
     def __init__(self,

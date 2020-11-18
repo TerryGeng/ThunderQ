@@ -9,12 +9,13 @@
 #     unnecessary confusion. Therefore, I avoided overloading "+", "-" for this reason.
 #
 
-# TODO: what is the amplitude? relative amplitude? volts? how to process them?
-
 from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
-from .iq_calibration_container import IQCalibrationContainer
+from device_repo import AWG
+
+from thunderq.helper.iq_calibration_container import IQCalibrationContainer
+
 
 class WaveForm:
     def __init__(self, width, amplitude):
@@ -49,9 +50,14 @@ class WaveForm:
                 max_abs = abs(data[i])
 
         if max_abs != 0:
-            data = data / max_abs # Normalize
+            data = data / max_abs  # Normalize
 
         return data, max_abs
+
+    def write_to_device(self, device: AWG):
+        wave_data, amplitude = self.normalized_sample(device.get_sample_rate())
+
+        device.write_raw_waveform(wave_data, amplitude)
 
     def thumbnail_sample(self, sample_points):
         # Used for generating sequence plot

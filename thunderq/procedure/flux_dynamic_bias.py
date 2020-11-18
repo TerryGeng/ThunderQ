@@ -1,7 +1,7 @@
-from thunderq.helper.waveform import WaveForm, DC
+from thunderq.waveform.waveform import DC
 from thunderq.helper.sequence import Sequence
 from thunderq.procedure import Procedure
-import thunderq.runtime as runtime
+
 
 class FluxDynamicBias(Procedure):
     def __init__(self,
@@ -22,7 +22,7 @@ class FluxDynamicBias(Procedure):
         self.has_update = True
 
     def pre_run(self, sequence: Sequence):
-        if self.has_update:
+        if self.has_update:  # TODO: determine this in sequence helper
             for channel_name in self.flux_channel_names:
                 if channel_name in self.flux_bias_default:
                     default_bias = self.flux_bias_default[channel_name]

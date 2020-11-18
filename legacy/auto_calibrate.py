@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 
 from thunder_board import senders
 
-from thunderq.experiment import Experiment, run_wrapper
+from thunderq.experiment import Cycle, run_wrapper
 from thunderq.driver.AWG import AWGChannel
 from thunderq.driver.ASG import ASGChannel
 from thunderq.driver.DC_source import DCChannel
@@ -36,7 +36,7 @@ from thunderq.procedure import DoubleChannelProbe, DCFlux
 
 # Step 2. Cavity spectrum, find the dip
 
-class CavityDip(Experiment):
+class CavityDip(Cycle):
     def __init__(self, probe_procedure: DoubleChannelProbe, freq_range, probe_amp, points=0, points_each_depth=None):
         super().__init__("Cavity dip")
         self.probe_proc = probe_procedure
@@ -194,7 +194,7 @@ class CavityDip(Experiment):
         return A/(1 + (freq - f0)**2/gamma**2) + C
 
 
-class CavityDipVsFluxOverOnePeroid(Experiment):
+class CavityDipVsFluxOverOnePeroid(Cycle):
     def __init__(self, flux_procedure: DCFlux, probe_procedure: DoubleChannelProbe, init_flux_point, init_prob_freq, flux_interval,
                  probe_amp, points=0, points_each_depth=None, flux_max_range=None):
         super().__init__("Cavity dip frequency vs flux bias")

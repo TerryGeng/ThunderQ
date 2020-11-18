@@ -1,6 +1,5 @@
-import numpy as np
 from thunderq.driver.ASG import ASG
-from thunderq.helper import waveform as waveform
+from thunderq.waveform import waveform as waveform
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.helper.sequence import Sequence
 from thunderq.procedure import Procedure
@@ -8,14 +7,20 @@ import thunderq.runtime as runtime
 
 
 class IQModulation(Procedure):
+    __parameters = ["target_freq", "lo_freq", "lo_power", "mod_freq", "mod_amp",
+                    "mod_len", "after_mod_padding"]
+    __result_keys = []
+
     def __init__(self,
+                 *,
                  mod_slice_name: str,
                  mod_I_name: str,
                  mod_Q_name: str,
                  lo_dev: ASG,
-                 mod_IQ_calibration: IQCalibrationContainer = None
+                 mod_IQ_calibration: IQCalibrationContainer = None,
+                 result_prefix=""
                  ):
-        super().__init__("IQ Modulation")
+        super().__init__("IQ Modulation", result_prefix)
         self.mod_slice = mod_slice_name
         self.mod_I_name = mod_I_name
         self.mod_Q_name = mod_Q_name
@@ -43,29 +48,6 @@ class IQModulation(Procedure):
 
         self.after_mod_padding = 0
 
-        self.has_update = True
-
-    def set_mod_params(self,
-                       target_freq=None,
-                       mod_len=None,
-                       mod_amp=None,
-                       lo_power=None,
-                       lo_freq=None,
-                       after_mod_padding=None):
-        self.has_update = True
-        if target_freq is not None:
-            self.target_freq = target_freq
-        if mod_len is not None:
-            self.mod_len = mod_len
-        if mod_amp is not None:
-            self.mod_amp = mod_amp
-        if lo_power is not None:
-            self.lo_power = lo_power
-        if lo_freq is not None:
-            self.lo_freq = lo_freq
-        if after_mod_padding is not None:
-            self.after_mod_padding = after_mod_padding
-
     def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
@@ -81,7 +63,7 @@ class IQModulation(Procedure):
             return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
     def pre_run(self, sequence: Sequence):
-        if self.has_update:
+        if self.has_update:  # TODO: determine this in sequence helper
             if not self.target_freq or not self.mod_amp:
                 raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
@@ -110,4 +92,4 @@ class IQModulation(Procedure):
             self.has_update = False
 
     def post_run(self):
-        pass
+        return None

@@ -1,5 +1,6 @@
 import thunderq.runtime as runtime
 
+
 class Dummy:
     def __init__(self, name="Dummy"):
         super().__setattr__('_dict', {})

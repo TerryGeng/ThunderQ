@@ -15,19 +15,12 @@ import thunderq.runtime as runtime
 
 
 def run():
-    runtime.logger.info("Initializing DG645...")
     runtime.env.trigger_dev = TriggerDG645()
-    runtime.logger.info("Initializing Flux M3202A chassis 1 slot 7...")
     runtime.env.flux_mod_dev = AWG_M3202A(1, 7)
-    runtime.logger.info("Initializing Drive M3202A chassis 1 slot 5...")
     runtime.env.drive_mod_dev = AWG_M3202A(1, 5)
-    runtime.logger.info("Initializing Probe M3202A chassis 1 slot 3...")
     runtime.env.probe_mod_dev = AWG_M3202A(1, 3)
-    runtime.logger.info("Initializing SGS993...")
     runtime.env.drive_lo_dev = ASG_SGS993()
-    runtime.logger.info("Initializing E8257C...")
     runtime.env.probe_lo_dev = ASG_E8257C()
-    runtime.logger.info("Initializing ATS9870...")
     runtime.env.acquisition_dev = Acquisition_ATS9870()
 
     runtime.env.sequence = Sequence(runtime.env.trigger_dev, 5000)

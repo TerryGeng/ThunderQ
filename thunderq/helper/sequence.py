@@ -1,19 +1,22 @@
 import numpy as np
 from matplotlib.figure import Figure
+from enum import Enum
 import matplotlib as mpl
+from thunderq.driver.trigger import TriggerDevice
+from thunderq.waveform.waveform import WaveForm, Blank
+
+from device_repo import AWG
+
 mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
-import thunderq.runtime as runtime
-from thunderq.driver.AWG import AWGChannel, AWG
-from thunderq.driver.trigger import TriggerDevice
-from thunderq.helper.waveform import WaveForm, Blank
 
-class Sequence:
-
+class PaddingPosition(Enum):
     PADDING_BEFORE = 0
     PADDING_BEHIND = 1
 
+
+class Sequence:
     class Trigger:
         def __init__(self, name, trigger_channel, raise_at, drop_after=4e-6, sequence=None):
             self.name = name
@@ -23,14 +26,14 @@ class Sequence:
             self.sequence = sequence
             self.linked_AWG_channels = []
 
-        def link_AWG_channel(self, channel):
-            self.linked_AWG_channels.append(channel)
-            self.sequence.AWG_channels[channel.name] = channel
-            self.sequence.AWG_channel_to_trigger[channel.name] = self
+        def link_AWG_channel(self, name, channel):
+            self.linked_AWG_channels.append((name, channel))
+            self.sequence.AWG_channels[name] = channel
+            self.sequence.AWG_channel_to_trigger[name] = self
             return self
 
     class Slice:
-        # padding_position is one of Sequence.PADDING_BEFORE and Sequence.PADDING_BEHIND
+        # padding_position is one of PaddingPosition.PADDING_BEFORE and PaddingPosition.PADDING_BEHIND
         def __init__(self, name, start_from, duration):
             self.name = name
             self.start_from = start_from
@@ -56,7 +59,7 @@ class Sequence:
 
             if padding_width > 0:
                 if channel_name not in self.waveform_padding_scheme \
-                        or self.waveform_padding_scheme[channel_name] == Sequence.PADDING_BEFORE:
+                        or self.waveform_padding_scheme[channel_name] == PaddingPosition.PADDING_BEFORE:
                     self.AWG_waveforms[channel_name] = Blank(padding_width).concat(
                         self.AWG_waveforms[channel_name]
                     )
@@ -72,7 +75,6 @@ class Sequence:
 
         def clear_waveform(self, channel_name):
             if channel_name in self.AWG_waveforms:
-                self.has_update = True
                 del self.AWG_waveforms[channel_name]
 
     def __init__(self, trigger_device: TriggerDevice, cycle_frequency):
@@ -155,8 +157,9 @@ class Sequence:
         compiled_waveform = self.compile_waveforms()
         for channel_name, waveform in compiled_waveform.items():
             if channel_name in self.AWG_channel_update_list:
+                assert isinstance(self.AWG_channels[channel_name], AWG)
                 self.AWG_channels[channel_name].stop()
-                self.AWG_channels[channel_name].write_waveform(waveform)
+                waveform.write_to_device(self.AWG_channels[channel_name])
         self.AWG_channel_update_list = []
 
     def stop_AWG(self):
@@ -195,13 +198,13 @@ class Sequence:
 
         for trigger in trigger_sorted:
             height += 1.5
-            for channel in reversed(trigger.linked_AWG_channels):
-                channel_name = channel.name
+            for channel_name, channel in reversed(trigger.linked_AWG_channels):
+                assert isinstance(channel, AWG)
 
                 # draw waveform first
                 y = np.zeros(len(sample_points))
                 y_zero_pos = height
-                y = y + channel.offset
+                y = y + channel.get_offset()
 
                 if channel_name in self.last_AWG_compiled_waveforms:
                     waveform = self.last_AWG_compiled_waveforms[channel_name]
@@ -251,7 +254,7 @@ class Sequence:
             slice_overlap_count = 0
             for slice_to_dodge in slice_overlap_counts.keys():
                 if not slice_to_dodge.start_from > slice.start_from + slice.duration or \
-                    not slice_to_dodge.start_from + slice_to_dodge.duration < slice.start_from:
+                        not slice_to_dodge.start_from + slice_to_dodge.duration < slice.start_from:
                     slice_overlap_count += 1
             slice_overlap_counts[slice] = slice_overlap_count
 

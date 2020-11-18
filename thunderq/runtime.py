@@ -24,6 +24,7 @@ logging_level = "INFO"
 
 runtime_initialized = False
 
+
 def runtime_initialize():
     global logger, experiment_status, env
     logger = Logger(thunderboard_enable, logging_level=logging_level)
@@ -36,5 +37,11 @@ def runtime_initialize():
         logger.warning("This mode is designed for debugging. If you are actually measuring "
                        "something, please runtime.dry_run = False and restart the env.")
 
+
 if not runtime_initialized:
     runtime_initialize()
+
+
+def update_experiment_status(msg):
+    experiment_status.update_status(msg)
+    logger.info("Experiment status updated: " + msg)

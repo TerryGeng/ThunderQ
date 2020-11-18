@@ -2,8 +2,8 @@ import numpy as np
 import threading
 from thunderq.experiment import Sweep1DExperiment
 import thunderq.runtime as runtime
-from thunderq.helper import waveform as waveform
-from thunderq.procedure import IQModProbe, IQModDrive, FluxDynamicBias, Procedure
+from thunderq.waveform import waveform as waveform
+from thunderq.procedure import IQModProbe, FluxDynamicBias, Procedure
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
 from thunderq.helper.sequence import Sequence
