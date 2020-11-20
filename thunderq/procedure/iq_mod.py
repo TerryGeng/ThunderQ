@@ -1,9 +1,42 @@
-from thunderq.driver.ASG import ASG
-from thunderq.waveform import waveform as waveform
+from device_repo import AWG, PSG
+from thunderq.waveform import waveform
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
-from thunderq.helper.sequence import Sequence
+from thunderq.helper.sequence import Sequence, PaddingPosition
 from thunderq.procedure import Procedure
-import thunderq.runtime as runtime
+from thunderq.runtime import Runtime
+
+
+class IQModParameters:
+    def __init__(self, *,
+                 mod_slice: Sequence.Slice,
+                 mod_I_dev: AWG,
+                 mod_Q_dev: AWG,
+                 mod_amp=None,
+                 mod_IQ_calibration: IQCalibrationContainer = None,
+                 lo_dev: PSG,
+                 lo_freq=None,
+                 lo_power=None,
+                 target_freq=None):
+
+        self.mod_slice = mod_slice
+        self.mod_I_dev = mod_I_dev
+        self.mod_Q_dev = mod_Q_dev
+        self.lo_dev = lo_dev
+
+        self.mod_IQ_calibration = mod_IQ_calibration
+
+        if self.mod_IQ_calibration:
+            self.lo_freq = mod_IQ_calibration.lo_freq  # Hz, the suggested value of current calibration
+            self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
+            self.mod_amp = mod_IQ_calibration.mod_amp  # V, the suggested value of current calibration
+        else:
+            self.lo_power = lo_power
+            self.lo_freq = lo_freq
+            self.mod_amp = mod_amp
+
+        self.mod_freq = 50e6  # Hz, will be overridden given a probe frequency
+
+        self.target_freq = target_freq
 
 
 class IQModulation(Procedure):
@@ -12,32 +45,25 @@ class IQModulation(Procedure):
     __result_keys = []
 
     def __init__(self,
-                 *,
-                 mod_slice_name: str,
-                 mod_I_name: str,
-                 mod_Q_name: str,
-                 lo_dev: ASG,
-                 mod_IQ_calibration: IQCalibrationContainer = None,
+                 runtime: Runtime,
+                 mod_params: IQModParameters,
                  result_prefix=""
                  ):
         super().__init__("IQ Modulation", result_prefix)
-        self.mod_slice = mod_slice_name
-        self.mod_I_name = mod_I_name
-        self.mod_Q_name = mod_Q_name
-        self.lo_dev = lo_dev
+        self.runtime = runtime
+        self.mod_slice = mod_params.mod_slice
+        self.mod_I_dev = mod_params.mod_I_dev
+        self.mod_Q_dev = mod_params.mod_Q_dev
+        self.lo_dev = mod_params.lo_dev
 
-        if not mod_IQ_calibration:
-            mod_IQ_calibration = IQCalibrationContainer()
-
-        self.mod_IQ_calibration = mod_IQ_calibration
-
-        self.lo_freq = mod_IQ_calibration.lo_freq  # Hz, the suggested value of current calibration
-        self.lo_power = mod_IQ_calibration.lo_power  # dBm, the suggested value of current calibration
+        self.mod_IQ_calibration = mod_params.mod_IQ_calibration
+        self.lo_power = mod_params.lo_power
+        self.lo_freq = mod_params.lo_freq
+        self.mod_amp = mod_params.mod_amp
 
         self.mod_freq = 50e6  # Hz, will be overridden given a probe frequency
-        self.mod_amp = mod_IQ_calibration.mod_amp  # V, the suggested value of current calibration
 
-        self.target_freq = None
+        self.target_freq = mod_params.target_freq
 
         # self.lo_freq = 5.747e9  # GHz
         # self.lo_power = 11  # dBm
@@ -62,32 +88,33 @@ class IQModulation(Procedure):
         else:
             return waveform.Real(IQ_waveform), waveform.Imag(IQ_waveform)
 
-    def pre_run(self, sequence: Sequence):
+    def pre_run(self):
         if self.has_update:  # TODO: determine this in sequence helper
             if not self.target_freq or not self.mod_amp:
                 raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
-            sequence.set_channel_global_offset(self.mod_I_name, self.mod_IQ_calibration.I_offset)
-            sequence.set_channel_global_offset(self.mod_Q_name, self.mod_IQ_calibration.Q_offset)
+            if self.mod_IQ_calibration:
+                self.mod_I_dev.set_offset(self.mod_IQ_calibration.I_offset)
+                self.mod_Q_dev.set_offset(self.mod_IQ_calibration.Q_offset)
 
             # Upper sideband is kept, in accordance with Orkesh's calibration
             self.mod_freq = self.target_freq - self.lo_freq
-            runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq / 1e9} GHz, "
-                                f"MOD freq {self.mod_freq / 1e9} GHz, "
-                                f"MOD amp {self.mod_amp} V, "
-                                f"MOD len {self.mod_len} s.")
-            self.lo_dev.set_frequency_amplitude(self.lo_freq, self.lo_power)
+            self.runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq / 1e9} GHz, "
+                                     f"MOD freq {self.mod_freq / 1e9} GHz, "
+                                     f"MOD amp {self.mod_amp} V, "
+                                     f"MOD len {self.mod_len} s.")
+            self.lo_dev.set_frequency(self.lo_freq)
+            self.lo_dev.set_amplitude(self.lo_power)
             self.lo_dev.run()
 
-            mod_slice: Sequence.Slice = sequence.slices[self.mod_slice]
-            mod_slice.clear_waveform(self.mod_I_name)
-            mod_slice.clear_waveform(self.mod_Q_name)
+            self.mod_slice.clear_waveform(self.mod_I_dev)
+            self.mod_slice.clear_waveform(self.mod_Q_dev)
 
             I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
-            mod_slice.add_waveform(self.mod_I_name, I_waveform)
-            mod_slice.add_waveform(self.mod_Q_name, Q_waveform)
-            mod_slice.set_waveform_padding(self.mod_I_name, Sequence.PADDING_BEFORE)
-            mod_slice.set_waveform_padding(self.mod_Q_name, Sequence.PADDING_BEFORE)
+            self.mod_slice.add_waveform(self.mod_I_dev, I_waveform)
+            self.mod_slice.add_waveform(self.mod_Q_dev, Q_waveform)
+            self.mod_slice.set_waveform_padding(self.mod_I_dev, PaddingPosition.PADDING_BEFORE)
+            self.mod_slice.set_waveform_padding(self.mod_Q_dev, PaddingPosition.PADDING_BEFORE)
 
             self.has_update = False
 

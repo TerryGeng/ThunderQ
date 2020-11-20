@@ -2,12 +2,13 @@ from thunderq.procedure import Procedure
 
 
 class Cycle:
-    def __init__(self, name):
+    def __init__(self, name, runtime):
         self.name = name
         self.procedures = []
 
         self.send_status_enable = True
-        self.sequence = None
+        self.runtime = runtime
+        self.sequence = self.runtime.sequence
         self.sequence_initialized = False
         self.trigger_initialized = False
 
@@ -30,7 +31,7 @@ class Cycle:
     def run(self):
         for procedure in self.procedures:
             assert isinstance(procedure, Procedure)
-            procedure.pre_run(self.sequence)
+            procedure.pre_run()
 
         self.run_sequence()
 

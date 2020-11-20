@@ -3,6 +3,9 @@ from ..waveform import waveform
 from ..driver.AWG import AWGChannel
 from ..driver.DC_source import DCChannel
 
+
+# TODO: LEGACY CODE
+
 class FluxController:
     # Assume all flux srcs are AWG, i.e. '3202A_slots*'
     # flux_srcs = [ [DCChannel(app.rc['flux_sour1']), AWGChannel(app.rc['fluxMod_sour'], 0) ], [...], ...]

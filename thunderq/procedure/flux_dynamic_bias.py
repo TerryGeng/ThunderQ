@@ -1,44 +1,59 @@
+from typing import List, Union
+from device_repo import AWG
 from thunderq.waveform.waveform import DC
 from thunderq.helper.sequence import Sequence
+from thunderq.runtime import Runtime
 from thunderq.procedure import Procedure
 
 
+class FluxAtSlice(dict):
+    def __init__(self, slice: Sequence.Slice):
+        super().__init__()
+        self.slice = slice
+
+    def set_channel_flux(self, channel_dev, flux_value):
+        self[channel_dev] = flux_value
+
+
 class FluxDynamicBias(Procedure):
-    def __init__(self,
-                 flux_channel_names: list,
-                 default_bias: dict=None
-                 ):
+    def __init__(self, runtime: Runtime, default_flux: FluxAtSlice):
         super().__init__("IQ Modulation")
-        self.flux_channel_names = flux_channel_names
+        self.flux_channels = list(default_flux.keys())
         self.slices = []
         self.flux_bias_per_slice = {}
-        self.flux_bias_default = default_bias
+        self.flux_bias_default = default_flux
+
+        self.runtime = runtime
 
         self.has_update = True
 
-    def set_bias_at_slice(self, slice_name, bias_voltages_dict: dict):
-        self.slices.append(slice_name)
-        self.flux_bias_per_slice[slice_name] = bias_voltages_dict
+    def set_bias_at_slice(self, bias_voltages_dict: FluxAtSlice):
+        self.slices.append(bias_voltages_dict.slice)
+        self.flux_bias_per_slice[bias_voltages_dict.slice] = bias_voltages_dict
+        for ch in bias_voltages_dict.keys():
+            if ch not in self.flux_channels:
+                self.flux_channels.append(ch)
+                self.flux_bias_default.set_channel_flux(ch, 0)
+
         self.has_update = True
 
-    def pre_run(self, sequence: Sequence):
+    def pre_run(self):
         if self.has_update:  # TODO: determine this in sequence helper
-            for channel_name in self.flux_channel_names:
-                if channel_name in self.flux_bias_default:
-                    default_bias = self.flux_bias_default[channel_name]
-                    sequence.set_channel_global_offset(channel_name, default_bias)
+            for channel_dev in self.flux_channels:
+                if channel_dev in self.flux_bias_default:
+                    default_bias = self.flux_bias_default[channel_dev]
+                    channel_dev.set_offset(default_bias)
                 else:
-                    self.flux_bias_default[channel_name] = 0
-                    sequence.set_channel_global_offset(channel_name, 0)
+                    self.flux_bias_default[channel_dev] = 0
+                    channel_dev.set_offset(0)
 
-            for slice_name in self.slices:
-                slice: Sequence.Slice = sequence.slices[slice_name]
-                for channel_name in self.flux_bias_per_slice[slice_name]:
-                    default_bias = self.flux_bias_default[channel_name]
-                    channel_offset = self.flux_bias_per_slice[slice_name][channel_name] - default_bias
-                    slice.clear_waveform(channel_name)
+            for slice in self.slices:
+                for channel_dev in self.flux_bias_per_slice[slice]:
+                    default_bias = self.flux_bias_default[channel_dev]
+                    channel_offset = self.flux_bias_per_slice[slice][channel_dev] - default_bias
+                    slice.clear_waveform(channel_dev)
                     if channel_offset != 0:
-                        slice.add_waveform(channel_name, DC(width=slice.duration, offset=channel_offset))
+                        slice.add_waveform(channel_dev, DC(width=slice.duration, offset=channel_offset))
 
             self.has_update = False
 

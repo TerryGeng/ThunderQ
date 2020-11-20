@@ -1,9 +1,19 @@
 import numpy as np
 from thunderq.helper.sequence import Sequence
-from thunderq.helper.iq_calibration_container import IQCalibrationContainer
-from thunderq.procedure import IQModulation
+from thunderq.procedure import IQModulation, IQModParameters
+from thunderq.runtime import Runtime
 
-from device_repo import Digitizer, PSG
+from device_repo import Digitizer
+
+
+class AcquisitionParameters:
+    def __init__(self, *,
+                 acquisition_slice: Sequence.Slice,
+                 acquisition_dev: Digitizer,
+                 repeats=200):
+        self.acquisition_slice = acquisition_slice
+        self.acquisition_dev = acquisition_dev
+        self.repeats = repeats
 
 
 def get_amp_phase(freq, data, sample_rate=1e9):
@@ -27,33 +37,25 @@ def get_amp_phase(freq, data, sample_rate=1e9):
 
 class IQModProbe(IQModulation):
     def __init__(self,
+                 runtime: Runtime,
                  *,
-                 probe_mod_slice_name: str,
-                 probe_mod_I_name: str,
-                 probe_mod_Q_name: str,
-                 probe_lo_dev: PSG,
-                 acquisition_slice_name: str,
-                 acquisition_dev: Digitizer,
-                 mod_IQ_calibration: IQCalibrationContainer = None,
+                 probe_mod_params: IQModParameters,
+                 acquisition_params: AcquisitionParameters,
                  result_prefix=""
                  ):
 
         super().__init__(
-            mod_slice_name=probe_mod_slice_name,
-            mod_I_name=probe_mod_I_name,
-            mod_Q_name=probe_mod_Q_name,
-            lo_dev=probe_lo_dev,
-            mod_IQ_calibration=mod_IQ_calibration,
-            result_prefix=result_prefix
+            mod_params=probe_mod_params,
+            result_prefix=result_prefix,
+            runtime=runtime
         )
 
         self.name = "IQ Modulated Probe"
-        self.acquisition_slice_name = acquisition_slice_name
-        self.acquisition_dev = acquisition_dev
+        self.acquisition_slice = acquisition_params.acquisition_slice
+        self.acquisition_dev = acquisition_params.acquisition_dev
 
-        self.probe_len = 4096 * 1e-9 # The length of mod waveform, in sec.
         self.readout_len = 1024
-        self.repeat = 200
+        self.repeat = acquisition_params.repeats
 
         self.result_amp = None
         self.result_phase = None
@@ -82,8 +84,8 @@ class IQModProbe(IQModulation):
     def probe_lo_power(self, value):
         super().lo_power = value
 
-    def pre_run(self, sequence: Sequence):
-        super().pre_run(sequence)
+    def pre_run(self):
+        super().pre_run()
 
         self.acquisition_dev.set_sample_number(self.readout_len)
         self.acquisition_dev.set_repeats(self.repeat)

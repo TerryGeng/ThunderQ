@@ -19,7 +19,7 @@ class Procedure:
             super().__setattr__("has_update", True)
         super().__setattr__(key, value)
 
-    def pre_run(self, sequence: Sequence):
+    def pre_run(self):
         # Generate the waveform here
         raise NotImplementedError
 
