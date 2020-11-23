@@ -1,9 +1,8 @@
 from device_repo import DeviceType, AWG, DG, Digitizer
 
 
-class MockAWG(AWG):
+class MockAWG:
     def __init__(self):
-        super().__init__()
         self.sample_rate = 1e9
         self.offset = 0.0
         self.amplitude = 0.0
@@ -42,7 +41,7 @@ class MockAWG(AWG):
         return self.amplitude
 
 
-class MockDG(DG):
+class MockDG:
     def __init__(self):
         self.cycle_freq = 0
         self.channel_delays = {}

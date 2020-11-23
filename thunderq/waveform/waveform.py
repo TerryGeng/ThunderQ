@@ -36,7 +36,7 @@ class WaveForm:
 
         return data
 
-    def normalized_sample(self, sample_rate, min_unit=16):
+    def normalized_sample(self, sample_rate, min_unit=1):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
         padding_len = 0
         if len(sample_points) % min_unit != 0:

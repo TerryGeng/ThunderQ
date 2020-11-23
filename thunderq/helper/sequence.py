@@ -134,10 +134,14 @@ class Sequence:
                         waveform = slice.get_waveform(channel_dev)
 
                         if channel_dev in AWG_compiled_waveforms:
+                            assert AWG_compiled_waveforms[channel_dev].width <= slice.start_from - trigger_start_from, \
+                                f"Waveform overlap detected on AWG channel {channel_name}."
+
                             if AWG_compiled_waveforms[channel_dev].width < slice.start_from - trigger_start_from:
                                 padding_length = slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_dev].width
                                 AWG_compiled_waveforms[channel_dev] = \
                                     AWG_compiled_waveforms[channel_dev].concat(Blank(padding_length))
+
                             AWG_compiled_waveforms[channel_dev] = AWG_compiled_waveforms[channel_dev].concat(waveform)
                         else:
                             if slice.start_from - trigger_start_from > 0:
@@ -157,9 +161,9 @@ class Sequence:
         compiled_waveform = self.compile_waveforms()
         for channel_dev, waveform in compiled_waveform.items():
             if channel_dev in self.AWG_channel_update_list:
-                assert isinstance(self.AWG_channels[channel_dev], AWG)
-                self.AWG_channels[channel_dev].stop()
-                waveform.write_to_device(self.AWG_channels[channel_dev])
+                # assert isinstance(self.AWG_channels[channel_dev], AWG)
+                channel_dev.stop()
+                waveform.write_to_device(channel_dev)
         self.AWG_channel_update_list = []
 
     def stop_AWG(self):
@@ -199,7 +203,7 @@ class Sequence:
         for trigger in trigger_sorted:
             height += 1.5
             for channel_name, channel_dev in reversed(trigger.linked_AWG_channels):
-                assert isinstance(channel_dev, AWG)
+                # assert isinstance(channel_dev, AWG)
 
                 # draw waveform first
                 y = np.zeros(len(sample_points))
