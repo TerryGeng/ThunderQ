@@ -1,30 +1,33 @@
-from thunderq.waveform.waveform import WaveForm
-from thunderq.helper.sequence import Sequence
+from thunderq.waveform.waveform import Waveform
+from thunderq.helper.sequence import Sequence,PaddingPosition
 from thunderq.procedure import Procedure
+from thunderq.runtime import Runtime
+from device_repo import AWG, DG
 
 
 class RunWaveform(Procedure):
     def __init__(self,
-                 slice_name: str,
-                 channel_name: str
+                 runtime: Runtime,
+                 slice: Sequence.Slice,
+                 channel_dev: AWG,
+                 waveform: Waveform,
+                 padding_pos: PaddingPosition = PaddingPosition.PADDING_BEFORE
                  ):
         super().__init__("IQ Modulation")
-        self.slice_name = slice_name
-        self.channel_name = channel_name
-        self.waveform = None
-        self.has_update = True
-
-    def set_waveform(self, waveform: WaveForm):
+        self.slice = slice
+        self.channel_dev = channel_dev
         self.waveform = waveform
         self.has_update = True
 
-    def pre_run(self, sequence: Sequence):
-        if self.has_update:
-            assert self.waveform, 'Waveform is None!'
+    def set_waveform(self, waveform: Waveform):
+        self.waveform = waveform
+        self.has_update = True
 
-            slice: Sequence.Slice = sequence.slices[self.slice_name]
-            slice.add_waveform(self.channel_name, self.waveform)
-            slice.set_waveform_padding(self.channel_name, Sequence.PADDING_BEFORE)
+    def pre_run(self):
+        if self.has_update:
+            self.slice.add_waveform(self.channel_dev, self.waveform)
+            self.slice.set_waveform_padding(self.channel_dev,
+                                            PaddingPosition.PADDING_BEFORE)
 
             self.has_update = False
 

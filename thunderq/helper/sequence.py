@@ -41,7 +41,7 @@ class Sequence:
             self.waveform_padding_scheme = {}
             self.channel_updated = []
 
-        def add_waveform(self, channel_dev, waveform: WaveForm):
+        def add_waveform(self, channel_dev, waveform: Waveform):
             self.channel_updated.append(channel_dev)
             if channel_dev not in self.AWG_waveforms:
                 self.AWG_waveforms[channel_dev] = waveform
@@ -292,5 +292,6 @@ class Sequence:
             i += 1
 
         ax.set_ylim(0, max_height + 1)
+
         return fig
 

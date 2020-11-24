@@ -2,9 +2,9 @@
 # -------------------------
 # Data structure for waveforms.
 # Note:
-# 1. Everything stored in these WaveForm class should be its functional form (loss-less form),
+# 1. Everything stored in these Waveform class should be its functional form (loss-less form),
 #     not raw waveform data array.
-# 2. WaveForm can be converted to raw data array by using .sample(sample_rate) method.
+# 2. Waveform can be converted to raw data array by using .sample(sample_rate) method.
 # 3. Some operators like "*" have been overloaded, under the premise that doing so won't cause
 #     unnecessary confusion. Therefore, I avoided overloading "+", "-" for this reason.
 #
@@ -17,7 +17,7 @@ from device_repo import AWG
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 
 
-class WaveForm:
+class Waveform:
     def __init__(self, width, amplitude):
         self.width = width
         self.amplitude = amplitude
@@ -87,18 +87,18 @@ class WaveForm:
         return self
 
     def __mul__(self, other):
-        if isinstance(other, WaveForm):
+        if isinstance(other, Waveform):
             return CarryWave(self, other)
         else:
             self.amplitude = self.amplitude * other
         return self
 
     def __str__(self):
-        return f"<WaveForm Base Object>"
+        return f"<Waveform Base Object>"
 
 
-class SumWave(WaveForm):
-    def __init__(self, wave1: WaveForm, wave2: WaveForm):
+class SumWave(Waveform):
+    def __init__(self, wave1: Waveform, wave2: Waveform):
         super().__init__(max(wave1.width, wave2.width), 1)
         self.wave1 = wave1
         self.wave2 = wave2
@@ -113,7 +113,7 @@ class SumWave(WaveForm):
         return self.wave1.at(time) + self.wave2.at(time)
 
     def __mul__(self, other):
-        if isinstance(other, WaveForm):
+        if isinstance(other, Waveform):
             return CarryWave(self, other)
         else:
             self.wave1.amplitude = self.wave1.amplitude * other
@@ -126,8 +126,8 @@ class SumWave(WaveForm):
                f"{indent(str(self.wave2), '  ')}"
 
 
-class CarryWave(WaveForm):
-    def __init__(self, wave1: WaveForm, wave2: WaveForm):
+class CarryWave(Waveform):
+    def __init__(self, wave1: Waveform, wave2: Waveform):
         super().__init__(max(wave1.width, wave2.width), 1)
         self.wave1 = wave1
         self.wave2 = wave2
@@ -142,7 +142,7 @@ class CarryWave(WaveForm):
         return self.wave1.at(time) * self.wave2.at(time)
 
     def __mul__(self, other):
-        if isinstance(other, WaveForm):
+        if isinstance(other, Waveform):
             return CarryWave(self, other)
         else:
             self.wave1.amplitude = self.wave1.amplitude * other
@@ -154,7 +154,7 @@ class CarryWave(WaveForm):
                f"{indent(str(self.wave2), '  ')}"
 
 
-class Sequence(WaveForm):
+class Sequence(Waveform):
     def __init__(self, *argv):
         super().__init__(0, 0)
         self.sequence = []
@@ -163,10 +163,10 @@ class Sequence(WaveForm):
         for arg in argv:
             if isinstance(arg, Sequence):
                 self.sequence.extend(arg.sequence)
-            elif isinstance(arg, WaveForm):
+            elif isinstance(arg, Waveform):
                 self.sequence.append(arg)
             else:
-                raise TypeError("Expected WaveForm")
+                raise TypeError("Expected Waveform")
 
         self._analysis_each_waveform_start_at()
 
@@ -229,7 +229,7 @@ class Sequence(WaveForm):
         return _str
 
 
-class Sin(WaveForm):
+class Sin(Waveform):
     def __init__(self, width, amplitude, omega=0, phi=0):
         super().__init__(width, amplitude)
         self.omega = omega
@@ -242,7 +242,7 @@ class Sin(WaveForm):
         return f"<Sin, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class Cos(WaveForm):
+class Cos(Waveform):
     def __init__(self, width, amplitude, omega=0, phi=0):
         super().__init__(width, amplitude)
         self.omega = omega
@@ -255,7 +255,7 @@ class Cos(WaveForm):
         return f"<Cos, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class ComplexExp(WaveForm):
+class ComplexExp(Waveform):
     def __init__(self, width, amplitude, omega=0, phi=0):
         super().__init__(width, amplitude)
         self.omega = omega
@@ -269,7 +269,7 @@ class ComplexExp(WaveForm):
         return f"<ComplexExp, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class DC(WaveForm):
+class DC(Waveform):
     def __init__(self, width, offset, complex_phi=0):
         super().__init__(width, offset)
         self.complex_phi = complex_phi
@@ -295,7 +295,7 @@ class Blank(DC):
         return f"<Blank, width: {self.width:e} s>"
 
 
-class Gaussian(WaveForm):
+class Gaussian(Waveform):
     def __init__(self, width=0, amplitude=1):
         super().__init__(width, amplitude)
 
@@ -311,7 +311,7 @@ class Gaussian(WaveForm):
         return f"<Gaussian, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class CalibratedIQ(WaveForm):
+class CalibratedIQ(Waveform):
     # This class is designed to generated calibrated IQ waveform.
     # Calibrated IQ carry wave is generated, and multiplied with (I_waveform + j * Q_waveform)
     # WARNING: This class doesn't deal with channel voltage offset. You should manually set it.
@@ -320,8 +320,8 @@ class CalibratedIQ(WaveForm):
 
     def __init__(self,
                  carry_freq,
-                 I_waveform: WaveForm=None,
-                 Q_waveform: WaveForm=None,
+                 I_waveform: Waveform=None,
+                 Q_waveform: Waveform=None,
                  IQ_cali: IQCalibrationContainer=None,
                  down_conversion: bool = False  # up conversion: set to True
                  ):
@@ -384,8 +384,8 @@ class CalibratedIQ(WaveForm):
                f"{indent(str(self.carry_IQ), '  ')}"
 
 
-class Real(WaveForm):
-    def __init__(self, complex_waveform: WaveForm):
+class Real(Waveform):
+    def __init__(self, complex_waveform: Waveform):
         super().__init__(complex_waveform.width, complex_waveform.amplitude)
         self.complex_waveform = complex_waveform
 
@@ -399,8 +399,8 @@ class Real(WaveForm):
         return f"<Real of {self.complex_waveform}>"
 
 
-class Imag(WaveForm):
-    def __init__(self, complex_waveform: WaveForm):
+class Imag(Waveform):
+    def __init__(self, complex_waveform: Waveform):
         super().__init__(complex_waveform.width, complex_waveform.amplitude)
         self.complex_waveform = complex_waveform
 

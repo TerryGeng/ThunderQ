@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from thunderq.waveform import WaveForm, DC, Blank
+from thunderq.waveform import Waveform, DC, Blank
 from thunderq.helper.sequence import Sequence, PaddingPosition
 from thunderq.procedure import Procedure
 from thunderq.runtime import Runtime
@@ -41,7 +41,7 @@ class TestSequence:
 
     @staticmethod
     def init_sequence(runtime: Runtime):
-        sequence = runtime.create_sequence(mock_dg, 1000)
+        sequence = runtime.create_sequence(mock_dg, 50000)
         sequence.add_trigger("test_trigger_0", 0, 0, 2e-6) \
             .link_AWG_channel("awg_0_0", mock_awg0) \
             .link_AWG_channel("awg_0_1", mock_awg1)
@@ -218,7 +218,6 @@ class TestSequence:
 
         with pytest.raises(AssertionError):
             sequence.setup_AWG()
-
 
     def test_waveform_before_trigger_exception(self):
         runtime = self.init_runtime()
