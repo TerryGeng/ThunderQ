@@ -46,10 +46,11 @@ class IQModulation(Procedure):
 
     def __init__(self,
                  runtime: Runtime,
+                 *,
                  mod_params: IQModParameters,
-                 result_prefix=""
+                 name="IQ Modulation"
                  ):
-        super().__init__("IQ Modulation", result_prefix)
+        super().__init__(name)
         self.runtime = runtime
         self.mod_slice = mod_params.mod_slice
         self.mod_I_dev = mod_params.mod_I_dev

@@ -26,7 +26,7 @@ class RabiCycle(Cycle):
 
         self.add_procedure(self.flux_bias_procedure)
 
-        self.drive_procedure = IQModulation(drive_mod_params)
+        self.drive_procedure = IQModulation(runtime, mod_params=drive_mod_params)
         self.add_procedure(self.drive_procedure)
 
         self.probe_procedure = IQModProbe(

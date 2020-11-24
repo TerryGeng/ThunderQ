@@ -39,6 +39,7 @@ class IQModProbe(IQModulation):
     def __init__(self,
                  runtime: Runtime,
                  *,
+                 name="IQ Modulated Probe",
                  probe_mod_params: IQModParameters,
                  acquisition_params: AcquisitionParameters,
                  result_prefix=""
@@ -50,7 +51,7 @@ class IQModProbe(IQModulation):
             runtime=runtime
         )
 
-        self.name = "IQ Modulated Probe"
+        self.name = name
         self.acquisition_slice = acquisition_params.acquisition_slice
         self.acquisition_dev = acquisition_params.acquisition_dev
 
