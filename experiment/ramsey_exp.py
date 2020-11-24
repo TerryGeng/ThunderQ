@@ -153,7 +153,7 @@ def run(runtime: Runtime):
                              acquisition_params=acquisition_params,
                              half_pi_len=0)
 
-    rabi_experiment = Sweep1DExperiment("Ramsey Experiment", rabi_cycle)
+    rabi_experiment = Sweep1DExperiment(runtime, "Ramsey Experiment", rabi_cycle)
 
     rabi_experiment.sweep(
         parameter_name="precession_length",

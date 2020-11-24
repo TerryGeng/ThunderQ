@@ -1,44 +1,32 @@
+import threading
 import numpy as np
 
 from thunder_board.clients import PlotClient
-import thunderq.runtime as runtime
+from thunderq.runtime import Runtime
 from thunderq.experiment import Sweep1DExperiment, Cycle
-from thunderq.procedure import IQModProbe, FluxDynamicBias
-from thunderq.helper.iq_calibration_container import read_IQ_calibrate_file
+from thunderq.procedure import (IQModProbe, IQModulation, FluxDynamicBias,
+                                IQModParameters, FluxAtSlice, AcquisitionParameters)
 
 
 class CavitySweepCycle(Cycle):
-    def __init__(self):
-        super().__init__("Probe Experiment")
-
-        self.center_probe_freq = 7.0645e9
-
-        # These are sweepable parameters. Will be update by update_parameters() each round.
-        self.probe_freq = self.center_probe_freq
+    def __init__(self, runtime: Runtime, *,
+                 flux_at_probe: FluxAtSlice,
+                 probe_mod_params: IQModParameters,
+                 acquisition_params: AcquisitionParameters
+                 ):
+        super().__init__("Rabi Experiment", runtime)
 
         self.flux_bias_procedure = FluxDynamicBias(
-            flux_channel_names=['flux_1', 'flux_2', 'flux_3', 'flux_4'],
-            default_bias=dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1)
+            runtime,
+            flux_at_probe
         )
-        # self.flux_bias_procedure.set_bias_at_slice("drive_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
-        # self.flux_bias_procedure.set_bias_at_slice("probe_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
-        # self.flux_bias_procedure.set_bias_at_slice("flux_mod", dict(flux_1=0, flux_2=-0.37, flux_3=0, flux_4=-0.1) )
-
         self.add_procedure(self.flux_bias_procedure)
 
         self.probe_procedure = IQModProbe(
-            probe_mod_slice_name="probe_mod",
-            probe_mod_I_name="probe_mod_I",
-            probe_mod_Q_name="probe_mod_Q",
-            probe_lo_dev=runtime.env.probe_lo_dev,
-            acquisition_slice_name="acquisition",
-            acquisition_dev=runtime.env.acquisition_dev,
-            mod_IQ_calibration=read_IQ_calibrate_file(
-                "data/S2_IQ_ATT1.txt")
+            runtime,
+            probe_mod_params=probe_mod_params,
+            acquisition_params=acquisition_params
         )
-
-        self.probe_procedure.repeat = 200
-
         self.add_procedure(self.probe_procedure)
 
         # Realtime result
@@ -48,27 +36,55 @@ class CavitySweepCycle(Cycle):
         self.sequence_sender = PlotClient("Pulse Sequence", id="pulse sequence")
         self.sequence_sent = False
 
-        self.sequence = runtime.env.sequence
-
-    def update_parameters(self):
-        self.probe_procedure.set_probe_params(self.probe_freq)
-
-    def retrieve_data(self):
-        self.result_amp, self.result_phase = self.probe_procedure.last_result()
-
     def run_sequence(self):
         super().run_sequence()
-        if not self.sequence_sent:
-            self.sequence_sender.send(self.sequence.plot())
-            self.sequence_sent = True
+        threading.Thread(target=self.send_sequence_plot).start()
+
+    def send_sequence_plot(self):
+        self.sequence_sender.send(self.sequence.plot())
+
+    @property
+    def probe_frequency(self):
+        return self.probe_procedure.target_freq
+
+    @probe_frequency.setter
+    def probe_frequency(self, value):
+        self.probe_procedure.target_freq = value
 
 
-def run():
-    cavity_exp = CavitySweepExperiment()
+def run(runtime: Runtime):
+    probe_mod_params = IQModParameters(
+        mod_slice=None,
+        mod_I_dev=None,
+        mod_Q_dev=None,
+        mod_amp=None,
+        lo_dev=None,
+        lo_freq=None,
+        lo_power=None,
+        target_freq=None
+    )
+
+    flux_at_probe = FluxAtSlice(None)
+
+    acquisition_params = AcquisitionParameters(
+        acquisition_slice=None,
+        acquisition_dev=None,
+        repeats=200
+    )
+
+    cycle = CavitySweepCycle(runtime.sequence,
+                             flux_at_probe=flux_at_probe,
+                             probe_mod_params=probe_mod_params,
+                             acquisition_params=acquisition_params)
+
+    cavity_exp = Sweep1DExperiment(runtime, "Cavity Sweep Experiment", cycle)
+
+    prove_freq_center = 0
+
     cavity_exp.sweep(
         parameter_name="probe_freq",
         parameter_unit="Hz",
-        points=np.linspace(cavity_exp.center_probe_freq - 0.005e9, cavity_exp.center_probe_freq + 0.005e9, 100),
+        points=np.linspace(probe_freq_center - 0.005e9, prove_freq_center + 0.005e9, 100),
         result_name="result_amp",
         result_unit="arb."
     )

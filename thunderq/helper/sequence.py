@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from enum import Enum
 import matplotlib as mpl
-from thunderq.waveform.waveform import WaveForm, Blank
+from thunderq.waveform.waveform import Waveform, Blank
 
 from device_repo import AWG, DG
 

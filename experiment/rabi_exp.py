@@ -114,7 +114,7 @@ def run(runtime: Runtime):
                            drive_mod_params=drive_mod_params,
                            acquisition_params=acquisition_params)
 
-    rabi_experiment = Sweep1DExperiment("Rabi Experiment", rabi_cycle)
+    rabi_experiment = Sweep1DExperiment(runtime, "Rabi Experiment", rabi_cycle)
 
     rabi_experiment.sweep(
         parameter_name="drive_length",

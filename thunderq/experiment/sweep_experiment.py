@@ -5,7 +5,7 @@ from typing import Iterable
 from matplotlib.figure import Figure
 import matplotlib as mpl
 
-import thunderq.runtime as runtime
+from thunderq.runtime import Runtime
 from thunder_board.clients import PlotClient
 
 mpl.rcParams['font.size'] = 9
@@ -13,7 +13,8 @@ mpl.rcParams['lines.linewidth'] = 1.0
 
 
 class Sweep1DExperiment:
-    def __init__(self, name, cycle):
+    def __init__(self, runtime, name, cycle):
+        self.runtime = runtime
         self.name = name
         self.cycle = cycle
         self.sweep_parameter_name = None
@@ -37,14 +38,16 @@ class Sweep1DExperiment:
         self.sweep_points = points
         if isinstance(result_name, str):
             self.result_names = [result_name]
-            self.result_plot_senders[result_name] = PlotClient("Plot: " + result_name, id="plot_" + result_name)
+            if self.runtime.config.thunderboard_enable:
+                self.result_plot_senders[result_name] = PlotClient("Plot: " + result_name, id="plot_" + result_name)
             self.results[result_name] = []
             assert isinstance(result_unit, str)
             self.result_units = [result_unit]
         elif isinstance(result_name, list):
             self.result_names = result_name
             for result in result_name:
-                self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
+                if self.runtime.config.thunderboard_enable:
+                    self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
                 self.results[result] = []
             assert isinstance(result_unit, list)
             self.result_units = result_unit
@@ -67,11 +70,13 @@ class Sweep1DExperiment:
                 eta = "?"
 
             if self.sweep_parameter_unit:
-                self.cycle.update_status(f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
-                                         f" at {point} {self.sweep_parameter_unit}, ETA: {eta} s")
+                self.runtime.exp_status.update_status(
+                    f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
+                    f" at {point} {self.sweep_parameter_unit}, ETA: {eta} s")
             else:
-                self.cycle.update_status(f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
-                                         f" at {point}, ETA: {eta} s")
+                self.runtime.exp_status.update_status(
+                    f"Sweeping <strong>{self.sweep_parameter_name}</strong>"
+                    f" at {point}, ETA: {eta} s")
 
             self.update_parameter(self.sweep_parameter_name, point)
             results = self.cycle.run()
@@ -80,7 +85,8 @@ class Sweep1DExperiment:
             for key in self.result_names:
                 self.results[key].append(results[key])
 
-            threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
+            if self.runtime.config.thunderboard_enable:
+                threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
         self.cycle.stop_sequence()
         self.process_data_post_exp()
 
@@ -115,7 +121,7 @@ class Sweep1DExperiment:
                         line += f"{self.results[key][i]} "
                     f.write(line + "\n")
 
-            runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
+            self.runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
 
     def make_plot_and_send(self):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
@@ -130,4 +136,5 @@ class Sweep1DExperiment:
             ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
             ax.set_ylabel(f"{result_name} / {result_unit}")
             fig.set_tight_layout(True)
+
             self.result_plot_senders[result_name].send(fig)
