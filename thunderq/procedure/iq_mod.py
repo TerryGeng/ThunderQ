@@ -105,7 +105,7 @@ class IQModulation(Procedure):
                                      f"MOD amp {self.mod_amp} V, "
                                      f"MOD len {self.mod_len} s.")
             self.lo_dev.set_frequency(self.lo_freq)
-            self.lo_dev.set_amplitude(self.lo_power)
+            self.lo_dev.set_power(self.lo_power)
             self.lo_dev.run()
 
             if not self._mod_waveform_wrote:

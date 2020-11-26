@@ -14,7 +14,7 @@ class CavitySweepCycle(Cycle):
                  probe_mod_params: IQModParameters,
                  acquisition_params: AcquisitionParameters
                  ):
-        super().__init__("Rabi Experiment", runtime)
+        super().__init__("Cavity Probe Experiment", runtime)
 
         self.flux_bias_procedure = FluxDynamicBias(
             runtime,
