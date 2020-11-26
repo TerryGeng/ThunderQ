@@ -40,9 +40,8 @@ class IQModParameters:
 
 
 class IQModulation(Procedure):
-    __parameters = ["target_freq", "lo_freq", "lo_power", "mod_freq", "mod_amp",
-                    "mod_len", "after_mod_padding"]
-    __result_keys = []
+    _parameters = ["target_freq", "lo_freq", "lo_power", "mod_freq", "mod_amp",
+                   "mod_len", "after_mod_padding"]
 
     def __init__(self,
                  runtime: Runtime,
@@ -51,6 +50,9 @@ class IQModulation(Procedure):
                  name="IQ Modulation"
                  ):
         super().__init__(name)
+
+        self._result_keys += []
+
         self.runtime = runtime
         self.mod_slice = mod_params.mod_slice
         self.mod_I_dev = mod_params.mod_I_dev

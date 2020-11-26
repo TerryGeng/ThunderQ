@@ -9,7 +9,7 @@ from thunder_board.clients import PlotClient
 
 
 class IQRamsey(IQModulation):
-    __parameters = IQModulation.__parameters + ["precession_length", "half_pi_length"]
+    _parameters = IQModulation._parameters + ["precession_length", "half_pi_length"]
 
     def __init__(self,
                  runtime: Runtime,

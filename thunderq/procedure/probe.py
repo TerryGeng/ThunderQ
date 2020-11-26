@@ -36,6 +36,8 @@ def get_amp_phase(freq, data, sample_rate=1e9):
 
 
 class IQModProbe(IQModulation):
+    _result_keys = ["amplitude", "phase"]
+
     def __init__(self,
                  runtime: Runtime,
                  *,

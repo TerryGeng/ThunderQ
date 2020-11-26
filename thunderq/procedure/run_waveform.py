@@ -6,6 +6,8 @@ from device_repo import AWG, DG
 
 
 class RunWaveform(Procedure):
+    _parameters = ["waveform"]
+
     def __init__(self,
                  runtime: Runtime,
                  slice: Sequence.Slice,
@@ -13,17 +15,12 @@ class RunWaveform(Procedure):
                  waveform: Waveform,
                  padding_pos=PaddingPosition.PADDING_BEFORE
                  ):
-        super().__init__("IQ Modulation")
+        super().__init__("Waveform")
         self.runtime = runtime
         self.slice = slice
         self.channel_dev = channel_dev
         self.waveform = waveform
-        self.has_update = True
         self.padding_pos = padding_pos
-
-    def set_waveform(self, waveform: Waveform):
-        self.waveform = waveform
-        self.has_update = True
 
     def pre_run(self):
         if self.has_update:
