@@ -142,7 +142,10 @@ class Sequence:
                                 AWG_compiled_waveforms[channel_dev] = \
                                     AWG_compiled_waveforms[channel_dev].concat(Blank(padding_length))
 
+                            assert waveform.width <= slice.duration, \
+                                f"Waveform of this slice longer than the total duration of this slice."
                             AWG_compiled_waveforms[channel_dev] = AWG_compiled_waveforms[channel_dev].concat(waveform)
+
                         else:
                             if slice.start_from - trigger_start_from > 0:
                                 AWG_compiled_waveforms[channel_dev] = \
@@ -173,7 +176,7 @@ class Sequence:
     def run_AWG(self):
         assert self.last_AWG_compiled_waveforms, 'Please run setup_AWG() first!'
         for channel_dev, waveform in self.last_AWG_compiled_waveforms.items():
-            self.AWG_channels[channel_dev].run()
+            channel_dev.run()
 
     def plot(self):
         plot_sample_rate = 1e6

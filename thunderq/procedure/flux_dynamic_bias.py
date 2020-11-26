@@ -7,9 +7,10 @@ from thunderq.procedure import Procedure
 
 
 class FluxAtSlice(dict):
-    def __init__(self, slice: Sequence.Slice):
+    def __init__(self, slice: Union[Sequence.Slice, None] = None, flux_dict: dict = None):
         super().__init__()
         self.slice = slice
+        self.update(flux_dict)
 
     def set_channel_flux(self, channel_dev, flux_value):
         self[channel_dev] = flux_value
@@ -28,6 +29,7 @@ class FluxDynamicBias(Procedure):
         self.has_update = True
 
     def set_bias_at_slice(self, bias_voltages_dict: FluxAtSlice):
+        assert bias_voltages_dict.slice is not None, "You have to specify the slice in FluxAtSlice."
         self.slices.append(bias_voltages_dict.slice)
         self.flux_bias_per_slice[bias_voltages_dict.slice] = bias_voltages_dict
         for ch in bias_voltages_dict.keys():
