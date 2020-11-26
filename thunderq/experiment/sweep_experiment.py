@@ -28,14 +28,20 @@ class Sweep1DExperiment:
         self.save_path = 'data'
         self.result_plot_senders = {}
         self.time_start_at = 0
+        self.sweep_parameter_getters = {}
+        self.sweep_parameter_setters = {}
 
     def sweep(self, parameter_name: str = None, points: Iterable = None, result_name=None,
               parameter_unit: str = '', result_unit=None):
-        getattr(self.cycle, parameter_name)
-        getattr(self.cycle, result_name)  # fool-proof, have a test first
 
+        self.runtime.exp_status.experiment_enter(f"Sweep experiment: {self.sweep_parameter_name}")
         self.sweep_parameter_name = parameter_name
+        self.sweep_parameter_unit = parameter_unit
+        self.sweep_parameter_getters[parameter_name] = self.get_attribute_getter(self.cycle, parameter_name)
+        self.sweep_parameter_setters[parameter_name] = self.get_attribute_setter(self.cycle, parameter_name)
+
         self.sweep_points = points
+        self.results[parameter_name] = points
         if isinstance(result_name, str):
             self.result_names = [result_name]
             if self.runtime.config.thunderboard_enable:
@@ -54,10 +60,9 @@ class Sweep1DExperiment:
         else:
             raise TypeError
 
-        self.sweep_parameter_unit = parameter_unit
-
         self.run()
 
+        self.runtime.exp_status.experiment_exit()
         return self.results
 
     def run(self):
@@ -91,9 +96,7 @@ class Sweep1DExperiment:
         self.process_data_post_exp()
 
     def update_parameter(self, param_name, value):
-        procedure_name, param = param_name.split(".")
-        procedure = getattr(self.cycle, procedure_name)
-        setattr(procedure, param, value)
+        self.sweep_parameter_setters[param_name](value)
 
     def retrieve_data(self):
         raise NotImplementedError
@@ -138,3 +141,31 @@ class Sweep1DExperiment:
             fig.set_tight_layout(True)
 
             self.result_plot_senders[result_name].send(fig)
+
+    @staticmethod
+    def get_attribute_setter(obj, attr_name):
+        _cpt = obj
+        _name = attr_name
+        while True:
+            split = _name.split(".", 1)
+            if len(split) == 1:
+                assert hasattr(_cpt, split[0]), f"Can't find parameter {attr_name}."
+                return lambda val: setattr(_cpt, split[0], val)
+            else:
+                assert hasattr(_cpt, split[0]), f"Can't find parameter {attr_name}."
+                _cpt = getattr(_cpt, split[0])
+                _name = split[1]
+
+    @staticmethod
+    def get_attribute_getter(obj, attr_name):
+        _cpt = obj
+        _name = attr_name
+        while True:
+            split = _name.split(".", 1)
+            if len(split) == 1:
+                assert hasattr(_cpt, split[0]), f"Can't find parameter {attr_name}."
+                return lambda: getattr(_cpt, split[0])
+            else:
+                assert hasattr(_cpt, split[0]), f"Can't find parameter {attr_name}."
+                _cpt = getattr(_cpt, split[0])
+                _name = split[1]

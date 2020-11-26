@@ -1,2 +1,2 @@
-from .cycle import Cycle, run_wrapper
+from .cycle import Cycle
 from .sweep_experiment import Sweep1DExperiment
