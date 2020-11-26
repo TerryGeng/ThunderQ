@@ -51,7 +51,6 @@ class IQModProbe(IQModulation):
 
         super().__init__(
             mod_params=probe_mod_params,
-            result_prefix=result_prefix,
             runtime=runtime
         )
 
@@ -80,7 +79,7 @@ class IQModProbe(IQModulation):
 
     @probe_mod_amp.setter
     def probe_mod_amp(self, value):
-        super().lo_power = value
+        super().mod_amp = value
 
     @property
     def probe_lo_power(self):

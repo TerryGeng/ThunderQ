@@ -12,6 +12,7 @@ class IQModParameters:
                  mod_I_dev: AWG,
                  mod_Q_dev: AWG,
                  mod_amp=None,
+                 mod_freq=None,
                  mod_IQ_calibration: IQCalibrationContainer = None,
                  lo_dev: PSG,
                  lo_freq=None,
@@ -21,6 +22,7 @@ class IQModParameters:
         self.mod_slice = mod_slice
         self.mod_I_dev = mod_I_dev
         self.mod_Q_dev = mod_Q_dev
+        self.mod_freq = mod_freq
         self.lo_dev = lo_dev
 
         self.mod_IQ_calibration = mod_IQ_calibration
@@ -51,8 +53,6 @@ class IQModulation(Procedure):
                  ):
         super().__init__(name)
 
-        self._result_keys += []
-
         self.runtime = runtime
         self.mod_slice = mod_params.mod_slice
         self.mod_I_dev = mod_params.mod_I_dev
@@ -77,6 +77,8 @@ class IQModulation(Procedure):
 
         self.after_mod_padding = 0
 
+        self._mod_waveform_wrote = False
+
     def build_drive_waveform(self, drive_len, mod_freq, drive_mod_amp):
         dc_waveform = waveform.DC(drive_len, 1) * drive_mod_amp
 
@@ -96,12 +98,8 @@ class IQModulation(Procedure):
             if not self.target_freq or not self.mod_amp:
                 raise ValueError(f"{self.name}: Modulation parameters should be set first.")
 
-            if self.mod_IQ_calibration:
-                self.mod_I_dev.set_offset(self.mod_IQ_calibration.I_offset)
-                self.mod_Q_dev.set_offset(self.mod_IQ_calibration.Q_offset)
-
-            # Upper sideband is kept, in accordance with Orkesh's calibration
-            self.mod_freq = self.target_freq - self.lo_freq
+            self.lo_freq = self.target_freq - self.mod_freq
+            # self.mod_freq = self.target_freq - self.lo_freq
             self.runtime.logger.info(f"{self.name} setup: LO freq {self.lo_freq / 1e9} GHz, "
                                      f"MOD freq {self.mod_freq / 1e9} GHz, "
                                      f"MOD amp {self.mod_amp} V, "
@@ -110,14 +108,20 @@ class IQModulation(Procedure):
             self.lo_dev.set_amplitude(self.lo_power)
             self.lo_dev.run()
 
-            self.mod_slice.clear_waveform(self.mod_I_dev)
-            self.mod_slice.clear_waveform(self.mod_Q_dev)
+            if not self._mod_waveform_wrote:
+                self.mod_slice.clear_waveform(self.mod_I_dev)
+                self.mod_slice.clear_waveform(self.mod_Q_dev)
 
-            I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
-            self.mod_slice.add_waveform(self.mod_I_dev, I_waveform)
-            self.mod_slice.add_waveform(self.mod_Q_dev, Q_waveform)
-            self.mod_slice.set_waveform_padding(self.mod_I_dev, PaddingPosition.PADDING_BEFORE)
-            self.mod_slice.set_waveform_padding(self.mod_Q_dev, PaddingPosition.PADDING_BEFORE)
+                if self.mod_IQ_calibration:
+                    self.mod_I_dev.set_offset(self.mod_IQ_calibration.I_offset)
+                    self.mod_Q_dev.set_offset(self.mod_IQ_calibration.Q_offset)
+
+                I_waveform, Q_waveform = self.build_drive_waveform(self.mod_len, self.mod_freq, self.mod_amp)
+                self.mod_slice.add_waveform(self.mod_I_dev, I_waveform)
+                self.mod_slice.add_waveform(self.mod_Q_dev, Q_waveform)
+                self.mod_slice.set_waveform_padding(self.mod_I_dev, PaddingPosition.PADDING_BEFORE)
+                self.mod_slice.set_waveform_padding(self.mod_Q_dev, PaddingPosition.PADDING_BEFORE)
+                self._mod_waveform_wrote = True
 
             self.has_update = False
 
