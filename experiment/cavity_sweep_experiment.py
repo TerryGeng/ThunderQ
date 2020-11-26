@@ -79,12 +79,12 @@ def run(runtime: Runtime):
 
     cavity_exp = Sweep1DExperiment(runtime, "Cavity Sweep Experiment", cycle)
 
-    prove_freq_center = 0
+    probe_freq_center = 0
 
     cavity_exp.sweep(
         parameter_name="probe_freq",
         parameter_unit="Hz",
-        points=np.linspace(probe_freq_center - 0.005e9, prove_freq_center + 0.005e9, 100),
+        points=np.linspace(probe_freq_center - 0.005e9, probe_freq_center + 0.005e9, 100),
         result_name="result_amp",
         result_unit="arb."
     )

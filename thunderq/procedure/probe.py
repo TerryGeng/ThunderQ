@@ -10,10 +10,12 @@ class AcquisitionParameters:
     def __init__(self, *,
                  acquisition_slice: Sequence.Slice,
                  acquisition_dev: Digitizer,
+                 single_channel=False,
                  repeats=200):
         self.acquisition_slice = acquisition_slice
         self.acquisition_dev = acquisition_dev
         self.repeats = repeats
+        self.single_channel = single_channel
 
 
 def get_amp_phase(freq, data, sample_rate=1e9):
@@ -56,6 +58,7 @@ class IQModProbe(IQModulation):
         self.name = name
         self.acquisition_slice = acquisition_params.acquisition_slice
         self.acquisition_dev = acquisition_params.acquisition_dev
+        self.single_channel = acquisition_params.single_channel
 
         self.readout_len = 1024
         self.repeat = acquisition_params.repeats
@@ -98,11 +101,17 @@ class IQModProbe(IQModulation):
         self.acquisition_dev.start_acquire()
         ch_I_data, ch_Q_data = self.acquisition_dev.fetch_average()
 
-        I_amp_avg, I_phase_avg = get_amp_phase(self.mod_freq, ch_I_data)
-        Q_amp_avg, Q_phase_avg = get_amp_phase(self.mod_freq, ch_Q_data)
+        if self.single_channel:
+            I_amp_avg, I_phase_avg = get_amp_phase(self.mod_freq, ch_I_data)
 
-        self.result_amp = (I_amp_avg**2 + Q_amp_avg**2) / 2
-        self.result_phase = (Q_amp_avg + np.pi/2 + I_amp_avg) / 2
+            self.result_amp = I_amp_avg
+            self.result_phase = I_phase_avg
+        else:
+            I_amp_avg, I_phase_avg = get_amp_phase(self.mod_freq, ch_I_data)
+            Q_amp_avg, Q_phase_avg = get_amp_phase(self.mod_freq, ch_Q_data)
+
+            self.result_amp = (I_amp_avg**2 + Q_amp_avg**2) / 2
+            self.result_phase = (Q_amp_avg + np.pi/2 + I_amp_avg) / 2
 
         return {
             f"{self.result_prefix}amplitude": self.result_amp,
