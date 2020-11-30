@@ -1,9 +1,9 @@
-# helper.waveform
+# helper.waveforms
 # -------------------------
 # Data structure for waveforms.
 # Note:
 # 1. Everything stored in these Waveform class should be its functional form (loss-less form),
-#     not raw waveform data array.
+#     not raw waveforms data array.
 # 2. Waveform can be converted to raw data array by using .sample(sample_rate) method.
 # 3. Some operators like "*" have been overloaded, under the premise that doing so won't cause
 #     unnecessary confusion. Therefore, I avoided overloading "+", "-" for this reason.
@@ -209,7 +209,7 @@ class Sequence(Waveform):
                     result[sample_pos] = self.sequence[i].at(sample_points[sample_pos] - start_at)
                     sample_pos += 1
             else:
-                # If some waveform has width that is less than the resolution of sample_rate:
+                # If some waveforms has width that is less than the resolution of sample_rate:
                 result[sample_pos] = self.sequence[i].at(
                     (start_at + next_start_at) / 2 - start_at)
                 sample_pos += 1
@@ -218,8 +218,6 @@ class Sequence(Waveform):
                 break
 
         return result
-
-
 
     def __str__(self):
         _str = f"<Sequence, width: {self.width:e} s>\n"
@@ -312,7 +310,7 @@ class Gaussian(Waveform):
 
 
 class CalibratedIQ(Waveform):
-    # This class is designed to generated calibrated IQ waveform.
+    # This class is designed to generated calibrated IQ waveforms.
     # Calibrated IQ carry wave is generated, and multiplied with (I_waveform + j * Q_waveform)
     # WARNING: This class doesn't deal with channel voltage offset. You should manually set it.
     #          since it should be applied to a channel in the entire time span to compensate the
@@ -335,7 +333,7 @@ class CalibratedIQ(Waveform):
         elif Q_waveform is None and I_waveform:
             IQ_waveform = I_waveform
         elif Q_waveform is None and I_waveform is None:
-            raise TypeError("At least one of I waveform and Q waveform should be given.")
+            raise TypeError("At least one of I waveforms and Q waveforms should be given.")
         else:
             IQ_waveform = SumWave(I_waveform, Q_waveform * 1j)
 
@@ -343,9 +341,13 @@ class CalibratedIQ(Waveform):
         self.amplitude = IQ_waveform.amplitude
 
         if down_conversion:
-            self.carry_IQ = IQ_waveform * SumWave(Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * 1j)
+            self.carry_IQ = IQ_waveform * SumWave(
+                Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * 1j
+            )
         else:
-            self.carry_IQ = IQ_waveform * SumWave(Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * (-1j))
+            self.carry_IQ = IQ_waveform * SumWave(
+                Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * (-1j)
+            )
 
         self.left_shift_I = 0
         self.left_shift_Q = 0
@@ -377,7 +379,7 @@ class CalibratedIQ(Waveform):
         return I_value + 1j * Q_value
 
     def __mul__(self, other):
-        raise TypeError("It's unwise to adjust the amplitude of a calibrated waveform.")
+        raise TypeError("It's unwise to adjust the amplitude of a calibrated waveforms.")
 
     def __str__(self):
         return f"<CalibratedIQ, width: {self.width:e} s>\n" \

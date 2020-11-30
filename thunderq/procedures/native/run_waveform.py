@@ -1,8 +1,8 @@
-from thunderq.waveform.waveform import Waveform
-from thunderq.helper.sequence import Sequence,PaddingPosition
-from thunderq.procedure import Procedure
+from thunderq.waveforms.native.waveform import Waveform
+from thunderq.sequence import Sequence,PaddingPosition
+from thunderq.procedures.native import Procedure
 from thunderq.runtime import Runtime
-from device_repo import AWG, DG
+from device_repo import AWG
 
 
 class RunWaveform(Procedure):

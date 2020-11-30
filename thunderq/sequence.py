@@ -2,9 +2,9 @@ import numpy as np
 from matplotlib.figure import Figure
 from enum import Enum
 import matplotlib as mpl
-from thunderq.waveform.waveform import Waveform, Blank
+from thunderq.waveforms.native import Waveform, Blank
 
-from device_repo import AWG, DG
+from device_repo import DG
 
 mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
@@ -208,7 +208,7 @@ class Sequence:
             for channel_name, channel_dev in reversed(trigger.linked_AWG_channels):
                 # assert isinstance(channel_dev, AWG)
 
-                # draw waveform first
+                # draw waveforms first
                 y = np.zeros(len(sample_points))
                 y_zero_pos = height
                 y = y + channel_dev.get_offset()

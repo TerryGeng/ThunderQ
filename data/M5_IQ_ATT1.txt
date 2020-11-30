@@ -1,6 +1,0 @@
-chI_offset_volt 0.00040567951318458417
-chQ_offset_volt 0.00030425963488843466
-Q_phase_diff -3.1284655118729674
-change_mod_power 0.12849898580121705
-change_mod_power_angle 0.8019265730226989
-src_power_dBM 7.5

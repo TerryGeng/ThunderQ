@@ -1,12 +1,9 @@
-from thunderq.helper.sequence import Sequence
-
-
 class Procedure:
     # Describe the change of waveforms during a time-span.
     # But it can also be used to do other task unrelated to waveforms.
 
     # Monitor the changes in these attributes, if modified, set self.has_update to True.
-    # Useful for sequence helper to determine if it need to recompile the waveform
+    # Useful for sequence helper to determine if it need to recompile the waveforms
     _parameters = []
     _result_keys = []
 
@@ -21,12 +18,12 @@ class Procedure:
         super().__setattr__(key, value)
 
     def pre_run(self):
-        # Generate the waveform here
+        # Generate the waveforms here
         raise NotImplementedError
 
     def post_run(self):
-        # This method is used to fetch the result of this procedure, if this
-        # procedure read any acquisition device.
+        # This method is used to fetch the result of this procedures, if this
+        # procedures read any acquisition device.
         # Format of the return value: a dict,
         # { self.result_prefix + 'key_of_this_data': data_val }
 

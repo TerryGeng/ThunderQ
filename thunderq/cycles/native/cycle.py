@@ -1,4 +1,4 @@
-from thunderq.procedure import Procedure
+from thunderq.procedures.native import Procedure
 
 
 class Cycle:

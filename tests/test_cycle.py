@@ -1,15 +1,11 @@
-import pytest
 import numpy as np
-from thunderq.waveform import Waveform, DC, Blank
-from thunderq.experiment import Cycle
-from thunderq.helper.sequence import Sequence, PaddingPosition
-from thunderq.procedure import Procedure, RunWaveform
-from thunderq.runtime import Runtime
-from thunderq.config import Config
+from thunderq.waveforms.native import DC, Blank
+from thunderq.cycles.native.cycle import Cycle
+from thunderq.sequence import Sequence
+from thunderq.procedures.native import Procedure, RunWaveform
 from thunderq.experiment.sweep_experiment import Sweep1DExperiment
 
-from mock_devices import (mock_awg0, mock_awg1, mock_awg2, mock_awg3,
-                          mock_awg4, mock_awg5, mock_dg, mock_digitizer)
+from thunderq.helper.mock_devices import (mock_awg0)
 
 from utils import init_runtime, init_sequence
 

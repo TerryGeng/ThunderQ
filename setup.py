@@ -8,8 +8,8 @@ setup(
 
     author="Yanda Geng",
     author_email="gengyanda16@smail.nju.edu.cn",
-    description="Experiment framework designed for waveform-centered experiment setups.",
-    keywords="scientific experiment waveform microwave control",
+    description="Experiment framework designed for waveforms-centered experiment setups.",
+    keywords="scientific experiment waveforms microwave control",
     platforms="any",
     install_requires=["device_repo", "matplotlib", "numpy"],
     classifiers=[

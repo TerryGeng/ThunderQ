@@ -1,5 +1,5 @@
 from thunderq.config import Config
-from thunderq.helper.sequence import Sequence
+from thunderq.sequence import Sequence
 from thunderq.helper.logger import Logger, ExperimentStatus
 
 
@@ -23,6 +23,7 @@ class Runtime:
         self.env = AttrDict()
         self._sequence = None
 
+        self.dry_run = config.dry_run
         if config.dry_run:
             self.logger.warning("=== DRY RUN WARNING ===")
             self.logger.warning("runtime.dry_run is True, means no device will be actually operated.")

@@ -1,11 +1,9 @@
-from thunderq.procedure import Procedure
 from thunderq.runtime import Runtime
 from thunderq.config import Config
-from thunderq.waveform import Waveform, DC, Blank
-from thunderq.helper.sequence import Sequence, PaddingPosition
 
-from mock_devices import (mock_awg0, mock_awg1, mock_awg2, mock_awg3,
-                          mock_awg4, mock_awg5, mock_dg, mock_digitizer)
+from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,
+                                          mock_awg3, mock_awg4, mock_awg5,
+                                          mock_dg)
 
 
 def init_runtime():

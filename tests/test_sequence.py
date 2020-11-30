@@ -1,11 +1,10 @@
 import pytest
 import numpy as np
-from thunderq.waveform import Waveform, DC, Blank
-from thunderq.helper.sequence import Sequence, PaddingPosition
+from thunderq.waveforms.native import DC, Blank
+from thunderq.sequence import Sequence, PaddingPosition
 from utils import init_runtime, init_sequence
 
-from mock_devices import (mock_awg0, mock_awg1, mock_awg2, mock_awg3,
-                          mock_awg4, mock_awg5, mock_dg, mock_digitizer)
+from thunderq.helper.mock_devices import (mock_awg0, mock_awg2, mock_awg4, mock_dg)
 
 
 class TestSequence:
