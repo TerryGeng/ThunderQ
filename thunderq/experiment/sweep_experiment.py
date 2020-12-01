@@ -13,7 +13,10 @@ mpl.rcParams['lines.linewidth'] = 1.0
 
 
 class Sweep1DExperiment:
-    def __init__(self, runtime, name, cycle):
+    def __init__(self, runtime, name, cycle, *,
+                 plot=True,
+                 save_to_file=True,
+                 save_path='data'):
         self.runtime = runtime
         self.name = name
         self.cycle = cycle
@@ -24,8 +27,9 @@ class Sweep1DExperiment:
         self.result_names = None
         self.result_units = None
         self.results = {}
-        self.save_to_file = True
-        self.save_path = 'data'
+        self.save_to_file = save_to_file
+        self.save_path = save_path
+        self.plot = plot
         self.result_plot_senders = {}
         self.time_start_at = 0
         self.sweep_parameter_getters = {}
@@ -44,7 +48,7 @@ class Sweep1DExperiment:
         self.results[parameter_name] = points
         if isinstance(result_name, str):
             self.result_names = [result_name]
-            if self.runtime.config.thunderboard_enable:
+            if self.runtime.config.thunderboard_enable and self.plot:
                 self.result_plot_senders[result_name] = PlotClient("Plot: " + result_name, id="plot_" + result_name)
             self.results[result_name] = []
             assert isinstance(result_unit, str)
@@ -52,7 +56,7 @@ class Sweep1DExperiment:
         elif isinstance(result_name, list):
             self.result_names = result_name
             for result in result_name:
-                if self.runtime.config.thunderboard_enable:
+                if self.runtime.config.thunderboard_enable and self.plot:
                     self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
                 self.results[result] = []
             assert isinstance(result_unit, list)
@@ -90,10 +94,12 @@ class Sweep1DExperiment:
             for key in self.result_names:
                 self.results[key].append(results[key])
 
-            if self.runtime.config.thunderboard_enable:
+            if self.runtime.config.thunderboard_enable and self.plot:
                 threading.Thread(target=self.make_plot_and_send, name="Plot Thread").start()
         self.cycle.stop_sequence()
         self.process_data_post_exp()
+
+        return self.results
 
     def update_parameter(self, param_name, value):
         self.sweep_parameter_setters[param_name](value)
