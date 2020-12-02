@@ -29,6 +29,7 @@ class Sweep1DExperiment:
         self.results = {}
         self.save_to_file = save_to_file
         self.save_path = save_path
+        self.file_name = None
         self.plot = plot
         self.result_plot_senders = {}
         self.time_start_at = 0
@@ -71,6 +72,9 @@ class Sweep1DExperiment:
 
     def run(self):
         self.time_start_at = time.time()
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        self.file_name = f"{self.save_path}{self.name}_{timestamp}" if self.save_path[-1] == '/' \
+            else f"{self.save_path}/{self.name}_{timestamp}"
         for i, point in enumerate(self.sweep_points):
 
             if i > 0:
@@ -112,9 +116,7 @@ class Sweep1DExperiment:
             if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)
 
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            filename = f"{self.save_path}{self.name}_{timestamp}.txt" if self.save_path[-1] == '/' \
-                else f"{self.save_path}/{self.name}_{timestamp}.txt"
+            filename = self.file_name + ".txt"
 
             with open(filename, "w") as f:
                 header = f"{self.sweep_parameter_name}/{self.sweep_parameter_unit} "
@@ -130,20 +132,40 @@ class Sweep1DExperiment:
                         line += f"{self.results[key][i]} "
                     f.write(line + "\n")
 
+            self.make_plot_and_save_single_file()
+
             self.runtime.logger.success(f"Data saved to file <u>{filename}</u>.")
+
+    def _draw_ax(self, ax, result_name, result_unit, color):
+        param_unit = self.sweep_parameter_unit
+        ax.plot(self.swept_points, self.results[result_name], color=color,
+                marker='x', markersize=4, linewidth=1)
+        ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
+        ax.set_ylabel(f"{result_name} / {result_unit}")
+
+    def make_plot_and_save_single_file(self):
+        colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
+        fig = Figure(figsize=(8, 4 * len(self.result_names)))
+        axs = fig.subplots(len(self.result_names), 1)
+        for i, result_name in enumerate(self.result_names):
+            ax = axs[i]
+            self._draw_ax(ax,
+                          result_name,
+                          self.result_units[i],
+                          colors[i % len(colors)])
+            fig.set_tight_layout(True)
+
+        fig.savefig(self.file_name + ".png")
 
     def make_plot_and_send(self):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
-        for i in range(len(self.result_names)):
+        for i, result_name in enumerate(self.result_names):
             fig = Figure(figsize=(8, 4))
             ax = fig.subplots(1, 1)
-            result_name = self.result_names[i]
-            param_unit = self.sweep_parameter_unit
-            result_unit = self.result_units[i]
-            ax.plot(self.swept_points, self.results[result_name], color=colors[i % len(colors)],
-                    marker='x', markersize=4, linewidth=1)
-            ax.set_xlabel(f"{self.sweep_parameter_name} / {param_unit}")
-            ax.set_ylabel(f"{result_name} / {result_unit}")
+            self._draw_ax(ax,
+                          result_name,
+                          self.result_units[i],
+                          colors[i % len(colors)])
             fig.set_tight_layout(True)
 
             self.result_plot_senders[result_name].send(fig)
