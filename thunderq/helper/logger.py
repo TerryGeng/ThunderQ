@@ -11,13 +11,18 @@ class Logger:
     def __init__(self, thunderboard=True, logging_level="INFO"):
         if thunderboard:
             self.log_sender = clients.TextClient("Log", id="log", rotate=True)
-            self.plot_sender = clients.PlotClient("Waveform Plot", id="debug_plot")
+            self.plot_senders = {}
         else:
             self.log_sender = None
             self.plot_sender = None
 
         self.logging_level = logging_level
         self.enable_timestamp = True
+
+    def get_plot_sender(self, _id, title=None):
+        if _id not in self.plot_senders:
+            self.plot_sender[_id] = clients.PlotClient(title, id=_id)
+        return self.plot_sender[_id]
 
     def set_logging_level(self, logging_level):
         assert logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR'], \
@@ -72,13 +77,6 @@ class Logger:
             print(msg)
             self.send_log("<span class='text-danger'>" + msg + "</span>")
 
-    def plot(self, fig):
-        if self.plot_sender:
-            self.plot_sender.send(fig)
-            return True
-        else:
-            return False
-
     def plot_waveform(self, **kwargs):
         threading.Thread(target=self._plot_waveform, args=kwargs)
 
@@ -111,13 +109,16 @@ class Logger:
             i += 1
 
         fig.set_tight_layout(True)
-        self.plot(fig)
+        if self.plot_sender is None:
+            return
+        self.get_plot_sender("debug_plot", "Waveform Plot").send(fig)
 
 
 class ExperimentStatus:
     def __init__(self, thunderboard=True):
         if thunderboard:
             self.status_sender = clients.TextClient("Experiment Status", id="status", rotate=False)
+            self.sequence_sender = clients.PlotClient("Pulse Sequence", id="pulse sequence")
         else:
             self.status_sender = None
 

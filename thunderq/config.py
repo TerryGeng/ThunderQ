@@ -3,3 +3,4 @@ class Config:
         self.dry_run = True
         self.logging_level = "INFO"
         self.thunderboard_enable = True
+        self.show_sequence = True

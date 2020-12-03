@@ -146,7 +146,11 @@ class Sweep1DExperiment:
     def make_plot_and_save_single_file(self):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
         fig = Figure(figsize=(8, 4 * len(self.result_names)))
-        axs = fig.subplots(len(self.result_names), 1)
+        if len(self.result_names) == 1:
+            axs = [fig.subplots(len(self.result_names), 1)]
+        else:
+            axs = fig.subplots(len(self.result_names), 1)
+
         for i, result_name in enumerate(self.result_names):
             ax = axs[i]
             self._draw_ax(ax,

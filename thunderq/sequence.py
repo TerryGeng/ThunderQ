@@ -138,7 +138,8 @@ class Sequence:
                                 f"Waveform overlap detected on AWG channel {channel_name}."
 
                             if AWG_compiled_waveforms[channel_dev].width < slice.start_from - trigger_start_from:
-                                padding_length = slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_dev].width
+                                padding_length = \
+                                    slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_dev].width
                                 AWG_compiled_waveforms[channel_dev] = \
                                     AWG_compiled_waveforms[channel_dev].concat(Blank(padding_length))
 

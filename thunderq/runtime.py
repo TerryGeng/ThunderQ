@@ -1,3 +1,5 @@
+import threading
+
 from thunderq.config import Config
 from thunderq.sequence import Sequence
 from thunderq.helper.logger import Logger, ExperimentStatus
@@ -33,6 +35,17 @@ class Runtime:
     def update_experiment_status(self, msg):
         self.exp_status.update_status(msg)
         self.logger.info("Experiment status updated: " + msg)
+
+    def send_sequence_plot(self, force=False, send_async=True):
+        if not force and not self.config.show_sequence:
+            return
+
+        sender = self.logger.get_plot_sender("pulse_sequence", "Pulse Sequence")
+
+        if send_async:
+            threading.Thread(target=lambda: sender.send(self.sequence.plot())).start()
+        else:
+            sender.send(self.sequence.plot())
 
     def load_device_to_env(self, name, device):
         self.env[name] = device

@@ -17,6 +17,7 @@ class Cycle:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
         self.sequence.setup_AWG()
+        self.runtime.send_sequence_plot()
         self.sequence.run_AWG()
 
     def stop_sequence(self):
