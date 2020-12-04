@@ -3,7 +3,7 @@ from thunderq.waveforms.native import DC, Blank
 from thunderq.cycles.native.cycle import Cycle
 from thunderq.sequence import Sequence
 from thunderq.procedures.native import Procedure, RunWaveform
-from thunderq.experiment.sweep_experiment import Sweep1DExperiment
+from thunderq.experiment import Sweep1DExperiment
 
 from thunderq.helper.mock_devices import (mock_awg0)
 
@@ -123,8 +123,8 @@ class TestCycle:
         test_experiment = Sweep1DExperiment(runtime, "Test Experiment", cycle)
 
         res = test_experiment.sweep(
-            parameter_name="proc.len",
-            parameter_unit="s",
+            scan_param="proc.len",
+            scan_param_unit="s",
             points=np.linspace(0, 1e-6, 3),
             result_name="prefix_res1",
             result_unit="arb."

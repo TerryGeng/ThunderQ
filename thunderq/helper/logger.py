@@ -132,8 +132,6 @@ class Logger:
             i += 1
 
         fig.set_tight_layout(True)
-        if self.plot_sender is None:
-            return
         self.get_plot_sender("debug_plot", "Waveform Plot").send(fig)
 
 

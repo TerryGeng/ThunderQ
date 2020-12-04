@@ -1,13 +1,7 @@
 import os
 import time
-import threading
-from typing import Iterable
 import numpy as np
-from matplotlib.figure import Figure
 import matplotlib as mpl
-
-from thunderq.runtime import Runtime
-from thunder_board.clients import PlotClient
 
 mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
@@ -86,7 +80,7 @@ class SweepExperiment:
         for i, col in enumerate(cols):
             unit = col_units[i]
             text += f"{col}/{unit}  "
-            self.file.write(text + "\n")
+        self.file.write(text + "\n")
 
     def write_one_record_to_file(self, params_dict, results_dict):
         assert self.file_cols
@@ -103,6 +97,15 @@ class SweepExperiment:
         return params_dict, result_dict
 
     def pre_sweep(self):
+        for parameter_name in self.sweep_points.keys():
+            self.sweep_parameter_getters[parameter_name] = \
+                self.get_attribute_getter(self.cycle, parameter_name)
+            self.sweep_parameter_setters[parameter_name] = \
+                self.get_attribute_setter(self.cycle, parameter_name)
+
+        self.runtime.exp_status.experiment_enter(
+            "Sweep " + ", ".join(self.results.keys()) + " against " +
+            ", ".join(self.sweep_points.keys()))
         if self.save_to_file:
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             self.file_name = f"{self.save_path}{self.name}_{timestamp}" if self.save_path[-1] == '/' \
@@ -167,105 +170,3 @@ class SweepExperiment:
                 assert hasattr(_cpt, split[0]), f"Can't find parameter {attr_name}."
                 _cpt = getattr(_cpt, split[0])
                 _name = split[1]
-
-
-class Sweep1DExperiment(SweepExperiment):
-    def __init__(self, runtime, name, cycle, *,
-                 plot=True,
-                 save_to_file=True,
-                 save_path='data'):
-        super().__init__(runtime, name, cycle,
-                         plot=plot, save_to_file=save_to_file,
-                         save_path=save_path)
-
-        self.sweep_parameter = ""
-        self.result_plot_senders = {}
-
-    def sweep(self, parameter_name: str = None, points: Iterable = None, result_name=None,
-              parameter_unit='', result_unit=''):
-
-        self.runtime.exp_status.experiment_enter(f"Sweep experiment: {parameter_name}")
-        self.sweep_parameter = parameter_name
-        self.sweep_parameter_units = {parameter_name: parameter_unit}
-        self.sweep_parameter_getters[parameter_name] = self.get_attribute_getter(self.cycle, parameter_name)
-        self.sweep_parameter_setters[parameter_name] = self.get_attribute_setter(self.cycle, parameter_name)
-
-        self.sweep_points[parameter_name] = points
-        self.sweep_shape = np.shape(points)
-
-        if isinstance(result_name, str):
-            self.results[result_name] = np.zeros(shape=self.sweep_shape)
-            assert isinstance(result_unit, str)
-            self.result_units[result_name] = result_unit
-        elif isinstance(result_name, list):
-            for result in result_name:
-                self.results[result] = np.zeros(shape=self.sweep_shape)
-                self.result_units[result] = result_unit
-        else:
-            raise TypeError
-
-        for result in self.results.keys():
-            if self.runtime.config.thunderboard_enable and self.plot:
-                self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
-
-        self.run()
-
-        return self.results
-
-    def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):
-        super().post_cycle(cycle_count, cycle_index, params_dict, results_dict)
-        if self.runtime.config.thunderboard_enable and self.plot:
-            threading.Thread(target=self.make_realtime_plot_and_send,
-                             args=(cycle_count,),
-                             name="Plot Thread").start()
-
-    @staticmethod
-    def _draw_ax(ax,
-                 param_name, params, param_unit,
-                 result_name, results, result_unit, color):
-        ax.plot(params,
-                results,
-                color=color,
-                marker='x', markersize=4, linewidth=1)
-        ax.set_xlabel(f"{param_name} / {param_unit}")
-        ax.set_ylabel(f"{result_name} / {result_unit}")
-
-    def make_plot_and_save_single_file(self):
-        colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
-        fig = Figure(figsize=(8, 4 * len(self.results)))
-        if len(self.results) == 1:
-            axs = [fig.subplots(1, 1)]
-        else:
-            axs = fig.subplots(len(self.results), 1)
-
-        for i, (result_name, results) in enumerate(self.results.items()):
-            ax = axs[i]
-            self._draw_ax(ax,
-                          self.sweep_parameter,
-                          self.sweep_points[self.sweep_parameter],
-                          self.sweep_parameter_units[self.sweep_parameter],
-                          result_name,
-                          results,
-                          self.result_units[i],
-                          colors[i % len(colors)])
-
-        fig.set_tight_layout(True)
-        fig.savefig(self.file_name + ".png")
-
-    def make_realtime_plot_and_send(self, cycle_count):
-        colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
-        for i, (result_name, results) in enumerate(self.results):
-            fig = Figure(figsize=(8, 4))
-            ax = fig.subplots(1, 1)
-            params = self.sweep_points[self.sweep_parameter]
-            self._draw_ax(ax,
-                          self.sweep_parameter,
-                          params[:cycle_count + 1],
-                          self.sweep_parameter_units[self.sweep_parameter],
-                          result_name,
-                          results[:cycle_count + 1],
-                          self.result_units[i],
-                          colors[i % len(colors)])
-            fig.set_tight_layout(True)
-
-            self.result_plot_senders[result_name].send(fig)
