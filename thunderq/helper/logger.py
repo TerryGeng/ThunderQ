@@ -3,26 +3,49 @@ import threading
 import numpy as np
 from matplotlib.figure import Figure
 
-from thunder_board import clients
+from thunder_board.clients import TextClient, PlotClient
+
+
+class LocalPlotClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def send(self, fig):
+        pass
+
+
+class LocalTextClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def send_log(self, text):
+        print(text)
+
+    def send(self, text):
+        print(text)
 
 
 class Logger:
     # logging_level: from less verbose to more verbose: ERROR, WARNING, INFO, DEBUG
     def __init__(self, thunderboard=True, logging_level="INFO"):
         if thunderboard:
-            self.log_sender = clients.TextClient("Log", id="log", rotate=True)
-            self.plot_senders = {}
+            self.log_sender = TextClient("Log", id="log", rotate=True)
         else:
-            self.log_sender = None
-            self.plot_sender = None
+            self.log_sender = LocalTextClient()
+        self.plot_senders = {}
 
         self.logging_level = logging_level
         self.enable_timestamp = True
 
     def get_plot_sender(self, _id, title=None):
-        if _id not in self.plot_senders:
-            self.plot_sender[_id] = clients.PlotClient(title, id=_id)
-        return self.plot_sender[_id]
+        if self.plot_senders:
+            if _id not in self.plot_senders:
+                self.plot_senders[_id] = PlotClient(title, id=_id)
+            return self.plot_senders[_id]
+        else:
+            if _id not in self.plot_senders:
+                self.plot_senders[_id] = LocalPlotClient(title, id=_id)
+            return self.plot_senders[_id]
 
     def set_logging_level(self, logging_level):
         assert logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR'], \
@@ -117,8 +140,8 @@ class Logger:
 class ExperimentStatus:
     def __init__(self, thunderboard=True):
         if thunderboard:
-            self.status_sender = clients.TextClient("Experiment Status", id="status", rotate=False)
-            self.sequence_sender = clients.PlotClient("Pulse Sequence", id="pulse sequence")
+            self.status_sender = TextClient("Experiment Status", id="status", rotate=False)
+            self.sequence_sender = PlotClient("Pulse Sequence", id="pulse sequence")
         else:
             self.status_sender = None
 

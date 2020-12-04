@@ -4,6 +4,7 @@ from thunderq.config import Config
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,
                                           mock_awg3, mock_awg4, mock_awg5,
                                           mock_dg)
+from unittest.mock import MagicMock, PropertyMock, patch, call
 
 
 def init_runtime():

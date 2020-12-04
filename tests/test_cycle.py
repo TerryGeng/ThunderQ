@@ -130,7 +130,6 @@ class TestCycle:
             result_unit="arb."
         )
 
-        assert (res['proc.len'] == np.linspace(0, 1e-6, 3)).all()
         assert (res['prefix_res1'] == np.array([3333, 3334, 3335])).all()
 
 

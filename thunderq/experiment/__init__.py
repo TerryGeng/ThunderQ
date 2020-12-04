@@ -1,1 +1,1 @@
-from .sweep_experiment import Sweep1DExperiment
+from .sweep_experiment import SweepExperiment, Sweep1DExperiment
