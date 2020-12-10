@@ -44,6 +44,11 @@ class Sweep2DExperiment(SweepExperiment):
         self.sweep_shape = np.shape(self.sweep_points[fast_param])
         self.swept_mask = np.ones(shape=self.sweep_shape)
 
+        self.results[fast_param] = self.sweep_points[fast_param]
+        self.result_units[fast_param] = fast_param_unit
+        self.results[slow_param] = self.sweep_points[slow_param]
+        self.result_units[slow_param] = slow_param_unit
+
         if isinstance(result_name, str):
             self.results[result_name] = np.zeros(shape=self.sweep_shape)
             assert isinstance(result_unit, str)

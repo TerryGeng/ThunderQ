@@ -47,8 +47,9 @@ class SweepExperiment:
             results = self.cycle.run()
             current_point, results = self.filter_result(current_point, results)
 
-            for key in self.results:
-                self.results[key].itemset(idx, results[key])
+            for key in results.keys():
+                if key in self.results.keys():
+                    self.results[key].itemset(idx, results[key])
 
             self.post_cycle(i, idx, current_point, results)
             i += 1
@@ -69,10 +70,8 @@ class SweepExperiment:
         self.file = open(filename, "w")
 
     def make_file_col_header(self):
-        cols = list(self.sweep_points.keys())
-        col_units = [self.sweep_parameter_units[k] for k in self.sweep_points.keys()]
-        cols += list(self.results.keys())
-        col_units += [self.result_units[k] for k in self.results.keys()]
+        cols = list(self.results.keys())
+        col_units = [self.result_units[k] for k in self.results.keys()]
 
         self.file_cols = cols
 

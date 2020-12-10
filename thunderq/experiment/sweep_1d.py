@@ -31,6 +31,8 @@ class Sweep1DExperiment(SweepExperiment):
         self.sweep_parameter = scan_param
         self.sweep_parameter_units = {scan_param: scan_param_unit}
         self.sweep_points[scan_param] = points
+        self.results[scan_param] = points
+        self.result_units[scan_param] = scan_param_unit
         self.sweep_shape = np.shape(points)
 
         if isinstance(result_name, str):
