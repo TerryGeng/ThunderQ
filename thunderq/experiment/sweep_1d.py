@@ -83,6 +83,8 @@ class Sweep1DExperiment(SweepExperiment):
             axs = fig.subplots(len(self.results), 1)
 
         for i, (result_name, results) in enumerate(self.results.items()):
+            if result_name == self.sweep_parameter:
+                continue
             ax = axs[i]
             self._draw_ax(ax,
                           self.sweep_parameter,
@@ -99,6 +101,8 @@ class Sweep1DExperiment(SweepExperiment):
     def make_realtime_plot_and_send(self, cycle_count):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
         for i, (result_name, results) in enumerate(self.results.items()):
+            if result_name == self.sweep_parameter:
+                continue
             fig = Figure(figsize=(8, 4))
             ax = fig.subplots(1, 1)
             params = self.sweep_points[self.sweep_parameter]

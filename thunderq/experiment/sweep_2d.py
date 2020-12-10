@@ -111,6 +111,9 @@ class Sweep2DExperiment(SweepExperiment):
             axs = fig.subplots(len(self.results), 1)
 
         for i, (result_name, results) in enumerate(self.results.items()):
+            if result_name == self.fast_scan_param \
+                    or result_name == self.slow_scan_param:
+                continue
             # make 2d plot for both axis
             self._draw_2d_ax(fig, axs[i],
                              self.fast_scan_param,
@@ -133,6 +136,9 @@ class Sweep2DExperiment(SweepExperiment):
         fast_cycle_start = cycle_count // fast_cycle_length
 
         for i, (result_name, results) in enumerate(self.results.items()):
+            if result_name == self.fast_scan_param \
+                    or result_name == self.slow_scan_param:
+                continue
             # make 1d plot for fast axis
             fig = Figure(figsize=(8, 4))
             ax = fig.subplots(1, 1)
@@ -151,6 +157,9 @@ class Sweep2DExperiment(SweepExperiment):
 
         if fast_index == 0:
             for i, (result_name, results) in enumerate(self.results):
+                if result_name == self.fast_scan_param \
+                        or result_name == self.slow_scan_param:
+                    continue
                 # make 2d plot for both axis
                 fig2d = Figure(figsize=(8, 4))
                 ax2 = fig2d.subplots(1, 1)
