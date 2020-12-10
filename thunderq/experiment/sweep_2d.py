@@ -92,9 +92,6 @@ class Sweep2DExperiment(SweepExperiment):
                     param1_name, params1, param1_unit,
                     param2_name, params2, param2_unit,
                     result_name, results, result_unit):
-        print(params1)
-        print(params2)
-        print(results)
         contour = ax.contourf(params1, params2, results)
         cbar = fig.colorbar(contour, ax=ax)
         cbar.set_label(f"{result_name} / {result_unit}")

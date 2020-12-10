@@ -33,12 +33,13 @@ class Logger:
         else:
             self.log_sender = LocalTextClient()
         self.plot_senders = {}
+        self.thunderboard = thunderboard
 
         self.logging_level = logging_level
         self.enable_timestamp = True
 
     def get_plot_sender(self, _id, title=None):
-        if self.plot_senders:
+        if self.thunderboard:
             if _id not in self.plot_senders:
                 self.plot_senders[_id] = PlotClient(title, id=_id)
             return self.plot_senders[_id]
@@ -61,7 +62,7 @@ class Logger:
             return ""
 
     def send_log(self, msg):
-        if self.log_sender:
+        if self.thunderboard:
             try:
                 self.log_sender.send(msg)
             except (ConnectionError, IOError):
