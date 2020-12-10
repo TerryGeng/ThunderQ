@@ -11,10 +11,13 @@ class Procedure:
         self.name = name
         self.has_update = True
         self.result_prefix = result_prefix
+        self.modified_params = []
 
     def __setattr__(self, key, value):
         if key in self._parameters:
             super().__setattr__("has_update", True)
+            if key not in self.modified_params:
+                self.modified_params.append(key)
         super().__setattr__(key, value)
 
     def pre_run(self):
