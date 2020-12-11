@@ -67,7 +67,11 @@ class Sweep2DExperiment(SweepExperiment):
                 self.result_plot_senders[f"{result}_2d"] = PlotClient(
                     "2D Plot: " + result, id="plot2d_" + result)
 
-        return self.run()
+        try:
+            return self.run()
+        except KeyboardInterrupt:
+            self.post_sweep()
+            raise KeyboardInterrupt("Experiment terminated by user.")
 
     def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):
         super().post_cycle(cycle_count, cycle_index, params_dict, results_dict)
@@ -105,12 +109,13 @@ class Sweep2DExperiment(SweepExperiment):
 
     def make_plot_and_save_single_file(self):
         fig = Figure(figsize=(8, 4 * len(self.results)))
-        if len(self.results) == 1:
+        if len(self.results) - 2 == 1:
             axs = [fig.subplots(1, 1)]
         else:
-            axs = fig.subplots(len(self.results), 1)
+            axs = fig.subplots(len(self.results) - 2, 1)
 
-        for i, (result_name, results) in enumerate(self.results.items()):
+        i = 0
+        for result_name, results in self.results.items():
             if result_name == self.fast_scan_param \
                     or result_name == self.slow_scan_param:
                 continue
@@ -125,6 +130,7 @@ class Sweep2DExperiment(SweepExperiment):
                              result_name,
                              np.ma.masked_array(results, mask=self.swept_mask),
                              self.result_units[result_name])
+            i += 1
 
         fig.set_tight_layout(True)
         fig.savefig(self.file_name + ".png")

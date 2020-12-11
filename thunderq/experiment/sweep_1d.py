@@ -50,7 +50,11 @@ class Sweep1DExperiment(SweepExperiment):
             if self.runtime.config.thunderboard_enable and self.plot:
                 self.result_plot_senders[result] = PlotClient("Plot: " + result, id="plot_" + result)
 
-        return self.run()
+        try:
+            return self.run()
+        except KeyboardInterrupt:
+            self.post_sweep()
+            raise KeyboardInterrupt("Experiment terminated by user.")
 
     def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):
         super().post_cycle(cycle_count, cycle_index, params_dict, results_dict)
@@ -76,13 +80,14 @@ class Sweep1DExperiment(SweepExperiment):
 
     def make_plot_and_save_single_file(self):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
-        fig = Figure(figsize=(8, 4 * len(self.results)))
-        if len(self.results) == 1:
+        fig = Figure(figsize=(8, 4 * (len(self.results) - 1)))
+        if len(self.results) - 1 == 1:
             axs = [fig.subplots(1, 1)]
         else:
-            axs = fig.subplots(len(self.results), 1)
+            axs = fig.subplots(len(self.results) - 1, 1)
 
-        for i, (result_name, results) in enumerate(self.results.items()):
+        i = 0
+        for result_name, results in self.results.items():
             if result_name == self.sweep_parameter:
                 continue
             ax = axs[i]
@@ -94,6 +99,7 @@ class Sweep1DExperiment(SweepExperiment):
                           results,
                           self.result_units[result_name],
                           colors[i % len(colors)])
+            i += 1
 
         fig.set_tight_layout(True)
         fig.savefig(self.file_name + ".png")
