@@ -102,7 +102,7 @@ class Logger:
             self.send_log("<span class='text-danger'>" + msg + "</span>")
 
     def plot_waveform(self, **kwargs):
-        threading.Thread(target=self._plot_waveform, args=kwargs)
+        threading.Thread(target=self._plot_waveform, args=kwargs).start()
 
     def _plot_waveform(self, **kwargs):
         # Usage:
