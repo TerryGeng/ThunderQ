@@ -91,6 +91,7 @@ class Sweep1DExperiment(SweepExperiment):
             if result_name == self.sweep_parameter:
                 continue
             ax = axs[i]
+            ax.ticklabel_format(useOffset=False)
             self._draw_ax(ax,
                           self.sweep_parameter,
                           self.sweep_points[self.sweep_parameter],
@@ -111,6 +112,7 @@ class Sweep1DExperiment(SweepExperiment):
                 continue
             fig = Figure(figsize=(8, 4))
             ax = fig.subplots(1, 1)
+            ax.ticklabel_format(useOffset=False)
             params = self.sweep_points[self.sweep_parameter]
             self._draw_ax(ax,
                           self.sweep_parameter,
