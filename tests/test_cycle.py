@@ -60,12 +60,11 @@ class TestCycle:
 
     def test_stack_procedures(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        assert isinstance(slice0, Sequence.Slice)
 
-        cycle = self.MyTestStackCycle(runtime, slice_0, mock_awg0,
+        cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1), (0.1e-6, 2), (0.1e-6, 3)])
         cycle.run()
 
@@ -81,12 +80,11 @@ class TestCycle:
 
     def test_procedure_has_update(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        assert isinstance(slice0, Sequence.Slice)
 
-        cycle = self.MyTestStackCycle(runtime, slice_0, mock_awg0,
+        cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1)])
         cycle.run()
 
@@ -98,12 +96,11 @@ class TestCycle:
 
     def test_procedure_result_retrieve(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        assert isinstance(slice0, Sequence.Slice)
 
-        cycle = self.MyTestStackCycle(runtime, slice_0, mock_awg0,
+        cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1)])
         cycle.add_procedure(self.DummyResultProcedure("prefix_"))
         res = cycle.run()
@@ -113,12 +110,11 @@ class TestCycle:
 
     def test_sweep(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        assert isinstance(slice0, Sequence.Slice)
 
-        cycle = self.MyTestSweepCycle(runtime, slice_0, mock_awg0)
+        cycle = self.MyTestSweepCycle(runtime, slice0, mock_awg0)
         cycle.proc.amp = 1
         test_experiment = Sweep1DExperiment(runtime, "Test Experiment", cycle)
 
@@ -131,7 +127,4 @@ class TestCycle:
         )
 
         assert (res['prefix_res1'] == np.array([3333, 3334, 3335])).all()
-
-
-
 

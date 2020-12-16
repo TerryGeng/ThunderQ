@@ -62,14 +62,29 @@ class SweepExperiment:
         for param, val in points.items():
             self.sweep_parameter_setters[param](val)
 
-    def open_file(self):
+    def write_param_file(self):
+        if not os.path.isdir(self.save_path):
+            os.makedirs(self.save_path)
+        filename = self.file_name + "_param.txt"
+
+        with open(filename, "w") as f:
+            for procedure in self.cycle.procedures:
+                for param in procedure._parameters:
+                    value = getattr(procedure, param)
+                    for alias, _param in procedure._parameter_alias:
+                        if param == _param:
+                            param = alias
+                            break
+                    f.write(f"{procedure.name}.{param} {value}\n")
+
+    def open_data_file(self):
         if not os.path.isdir(self.save_path):
             os.makedirs(self.save_path)
 
         filename = self.file_name + ".txt"
         self.file = open(filename, "w")
 
-    def make_file_col_header(self):
+    def make_data_file_col_header(self):
         cols = list(self.results.keys())
         col_units = [self.result_units[k] for k in self.results.keys()]
 
@@ -81,7 +96,7 @@ class SweepExperiment:
             text += f"{col}/{unit}  "
         self.file.write(text + "\n")
 
-    def write_one_record_to_file(self, params_dict, results_dict):
+    def write_one_record_to_data_file(self, params_dict, results_dict):
         assert self.file_cols
         text = ""
         for col in self.file_cols:
@@ -109,8 +124,10 @@ class SweepExperiment:
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             self.file_name = f"{self.save_path}{self.name}_{timestamp}" if self.save_path[-1] == '/' \
                 else f"{self.save_path}/{self.name}_{timestamp}"
-            self.open_file()
-            self.make_file_col_header()
+
+            self.write_param_file()
+            self.open_data_file()
+            self.make_data_file_col_header()
 
     def pre_cycle(self, cycle_count, cycle_index, params_dict):
         if cycle_count > 0:
@@ -134,7 +151,7 @@ class SweepExperiment:
         return params_dict
 
     def post_cycle(self, cycle_count, cycle_index, params_dict, result_dict):
-        self.write_one_record_to_file(params_dict, result_dict)
+        self.write_one_record_to_data_file(params_dict, result_dict)
 
     def post_sweep(self):
         self.runtime.logger.success(f"Data saved to file <u>{self.file_name}.txt</u>.")

@@ -5,6 +5,7 @@ class Procedure:
     # Monitor the changes in these attributes, if modified, set self.has_update to True.
     # Useful for sequence helper to determine if it need to recompile the waveforms
     _parameters = []
+    _parameter_alias = {}
     _result_keys = []
 
     def __init__(self, name, result_prefix=""):
@@ -14,11 +15,15 @@ class Procedure:
         self.modified_params = []
 
     def __setattr__(self, key, value):
-        if key in self._parameters:
+        if key in self._parameter_alias:
+            param = self._parameter_alias[key]
+        else:
+            param = key
+        if param in self._parameters:
             super().__setattr__("has_update", True)
-            if key not in self.modified_params:
-                self.modified_params.append(key)
-        super().__setattr__(key, value)
+            if param not in self.modified_params:
+                self.modified_params.append(param)
+        super().__setattr__(param, value)
 
     def pre_run(self):
         # Generate the waveforms here

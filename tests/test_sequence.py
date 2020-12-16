@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
 from thunderq.sequence import Sequence, PaddingPosition
-from utils import init_runtime, init_sequence
+from utils import init_runtime, init_sequence, init_flex_sequence
 
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg2, mock_awg4, mock_dg)
 
@@ -10,7 +10,7 @@ from thunderq.helper.mock_devices import (mock_awg0, mock_awg2, mock_awg4, mock_
 class TestSequence:
     def test_trigger_setup(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
         sequence.setup_trigger()
 
         for channel, expected_raise_at, expected_duration in [
@@ -23,13 +23,12 @@ class TestSequence:
 
     def test_slice_padding_before(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        assert isinstance(slice0, Sequence.Slice)
         waveform = DC(0.1e-6, 1)
 
-        slice_0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEFORE)
-        slice_0.add_waveform(mock_awg0, waveform)
+        slice0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEFORE)
+        slice0.add_waveform(mock_awg0, waveform)
 
         sequence.setup_trigger()
         sequence.setup_AWG()
@@ -46,13 +45,12 @@ class TestSequence:
 
     def test_slice_padding_after(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        assert isinstance(slice0, Sequence.Slice)
         waveform = DC(0.1e-6, 1)
 
-        slice_0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEHIND)
-        slice_0.add_waveform(mock_awg0, waveform)
+        slice0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEHIND)
+        slice0.add_waveform(mock_awg0, waveform)
 
         sequence.setup_trigger()
         sequence.setup_AWG()
@@ -69,16 +67,15 @@ class TestSequence:
 
     def test_sequence_stack(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
-        assert isinstance(slice_0, Sequence.Slice)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        assert isinstance(slice0, Sequence.Slice)
         waveform1 = DC(0.1e-6, 1)
         waveform2 = DC(0.1e-6, 2)
         waveform3 = DC(0.1e-6, 3)
 
-        slice_0.add_waveform(mock_awg0, waveform1)
-        slice_0.add_waveform(mock_awg0, waveform2)
-        slice_0.add_waveform(mock_awg0, waveform3)
+        slice0.add_waveform(mock_awg0, waveform1)
+        slice0.add_waveform(mock_awg0, waveform2)
+        slice0.add_waveform(mock_awg0, waveform3)
 
         sequence.setup_trigger()
         sequence.setup_AWG()
@@ -96,16 +93,15 @@ class TestSequence:
 
     def test_slice_padding_across_multiple_trigger_channels(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_2 = sequence.slices['slice_2']
-        assert isinstance(slice_2, Sequence.Slice)
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        assert isinstance(slice2, Sequence.Slice)
         waveform_awg0 = DC(0.1e-6, 1)
         waveform_awg2 = DC(0.1e-6, 1)
         waveform_awg4 = DC(0.1e-6, 1)
 
-        slice_2.add_waveform(mock_awg0, waveform_awg0)
-        slice_2.add_waveform(mock_awg2, waveform_awg2)
-        slice_2.add_waveform(mock_awg4, waveform_awg4)
+        slice2.add_waveform(mock_awg0, waveform_awg0)
+        slice2.add_waveform(mock_awg2, waveform_awg2)
+        slice2.add_waveform(mock_awg4, waveform_awg4)
 
         sequence.setup_trigger()
         sequence.setup_AWG()
@@ -129,15 +125,13 @@ class TestSequence:
 
     def test_same_awg_channel_across_slices(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_1 = sequence.slices['slice_1']
-        slice_2 = sequence.slices['slice_2']
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
         waveform_slice1 = DC(0.1e-6, 2)
         waveform_slice2 = DC(0.1e-6, 3)
 
-        slice_1.add_waveform(mock_awg0, waveform_slice1)
-        slice_2.add_waveform(mock_awg0, waveform_slice2)
+        slice1.add_waveform(mock_awg0, waveform_slice1)
+        slice2.add_waveform(mock_awg0, waveform_slice2)
 
         sequence.setup_trigger()
         sequence.setup_AWG()
@@ -152,17 +146,41 @@ class TestSequence:
         assert len(expected_waveform) == len(mock_awg0.raw_waveform)
         assert (mock_awg0.raw_waveform == expected_waveform).all()
 
+    def test_flex_slice_stack(self):
+        runtime = init_runtime()
+        sequence, slice0, slice1, slice2 = init_flex_sequence(runtime)
+        assert isinstance(slice0, Sequence.Slice)
+        waveform1 = DC(0.1e-6, 1)
+        waveform2 = DC(0.1e-6, 2)
+        waveform3 = DC(0.1e-6, 3)
+
+        slice0.add_waveform(mock_awg0, waveform1)
+        slice1.add_waveform(mock_awg0, waveform2)
+        slice2.add_waveform(mock_awg0, waveform3)
+
+        sequence.setup_trigger()
+        sequence.setup_AWG()
+
+        expected_waveform, _ = waveform1.concat(waveform2) \
+            .concat(waveform3) \
+            .normalized_sample(mock_awg0.sample_rate)
+
+        assert isinstance(expected_waveform, np.ndarray)
+        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+
+        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+
+        assert (mock_awg0.raw_waveform == expected_waveform).all()
+
     def test_waveform_overlap_exception(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
-        slice_1 = sequence.slices['slice_1']
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
         waveform_slice0 = DC(0.1e-6, 2)
         waveform_slice1 = DC(0.1e-6, 3)
 
-        slice_0.add_waveform(mock_awg0, waveform_slice0)
-        slice_1.add_waveform(mock_awg0, waveform_slice1)
+        slice0.add_waveform(mock_awg0, waveform_slice0)
+        slice1.add_waveform(mock_awg0, waveform_slice1)
 
         sequence.setup_trigger()
 
@@ -172,11 +190,11 @@ class TestSequence:
     def test_waveform_before_trigger_exception(self):
         runtime = init_runtime()
         sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
         waveform_slice0 = DC(0.1e-6, 2)
 
-        slice_0.add_waveform(mock_awg2, waveform_slice0)
+        slice0.add_waveform(mock_awg2, waveform_slice0)
 
         sequence.setup_trigger()
 
@@ -185,12 +203,11 @@ class TestSequence:
 
     def test_waveform_too_long_exception(self):
         runtime = init_runtime()
-        sequence = init_sequence(runtime)
-        slice_0 = sequence.slices['slice_0']
+        sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
         waveform_slice0 = DC(3e-6, 2)
 
-        slice_0.add_waveform(mock_awg2, waveform_slice0)
+        slice0.add_waveform(mock_awg2, waveform_slice0)
 
         sequence.setup_trigger()
 

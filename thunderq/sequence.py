@@ -33,16 +33,27 @@ class Sequence:
 
     class Slice:
         # padding_position is one of PaddingPosition.PADDING_BEFORE and PaddingPosition.PADDING_BEHIND
-        def __init__(self, name, start_from, duration):
+        def __init__(self, name, start_from=0, duration=0):
             self.name = name
             self.start_from = start_from
-            self.duration = duration
+            self._duration = duration
             self.AWG_waveforms = {}
             self.waveform_padding_scheme = {}
+            self.processed_waveform = {}
             self.channel_updated = []
+
+        @property
+        def duration(self):
+            if self._duration:
+                return self._duration
+            else:
+                return max([waveform.width for waveform in self.AWG_waveforms.values()])
 
         def add_waveform(self, channel_dev, waveform: Waveform):
             self.channel_updated.append(channel_dev)
+            if channel_dev in self.processed_waveform:
+                del self.processed_waveform[channel_dev]
+
             if channel_dev not in self.AWG_waveforms:
                 self.AWG_waveforms[channel_dev] = waveform
             else:
@@ -68,9 +79,13 @@ class Sequence:
                     )
 
         def get_waveform(self, channel_dev):
-            self.channel_updated.append(channel_dev)
-            self.pad_waveform(channel_dev)
-            return self.AWG_waveforms[channel_dev] if channel_dev in self.AWG_waveforms else None
+            if channel_dev in self.processed_waveform:
+                return self.processed_waveform[channel_dev]
+
+            if channel_dev in self.AWG_waveforms:
+                self.pad_waveform(channel_dev)
+                self.processed_waveform[channel_dev] = self.AWG_waveforms[channel_dev]
+                return self.AWG_waveforms[channel_dev]
 
         def clear_waveform(self, channel_dev):
             if channel_dev in self.AWG_waveforms:
@@ -79,7 +94,7 @@ class Sequence:
     def __init__(self, trigger_device: DG, cycle_frequency):
         self.cycle_frequency = cycle_frequency
         self.trigger_device = trigger_device
-        self.slices = {}
+        self.slices = []
         self.triggers = {}
         self.AWG_channels = {}
         self.AWG_channel_to_trigger = {}
@@ -90,14 +105,15 @@ class Sequence:
         self.triggers[name] = Sequence.Trigger(name, trigger_channel, raise_at, drop_after, self)
         return self.triggers[name]
 
-    def add_slice(self, name, start_from, duration) -> Slice:
+    def add_slice(self, name, start_from=0, duration=0) -> Slice:
         if start_from + duration > 1 / self.cycle_frequency:
             raise ValueError(f"Out of range. Your slice ends at {start_from + duration}s, "
                              f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
 
-        self.slices[name] = Sequence.Slice(name, start_from, duration)
+        new_slice = Sequence.Slice(name, start_from, duration)
+        self.slices.append(new_slice)
 
-        return self.slices[name]
+        return new_slice
 
     def setup(self):
         self.setup_trigger()
@@ -114,9 +130,9 @@ class Sequence:
             )
 
     def compile_waveforms(self):
-        slices_sorted = sorted(self.slices.values(), key=lambda slice: slice.start_from)
         AWG_compiled_waveforms = self.last_AWG_compiled_waveforms
-        for slice in slices_sorted:
+        max_compiled_waveform_length = 0
+        for slice in self.slices:
             if slice.channel_updated:
                 for channel_name, channel_dev in self.AWG_channels.items():
                     if channel_dev in slice.AWG_waveforms and channel_dev in slice.channel_updated:
@@ -127,19 +143,25 @@ class Sequence:
                                 del self.last_AWG_compiled_waveforms[channel_dev]
 
                         trigger_start_from = self.AWG_channel_to_trigger[channel_dev].raise_at
-                        assert trigger_start_from <= slice.start_from, \
+                        start_from = slice.start_from if slice.start_from else max_compiled_waveform_length
+
+                        assert trigger_start_from <= start_from, \
                             f"Waveform assigned to AWG channel before it is triggered! " \
                             f"(Slice {slice.name}, AWG Channel {channel_name})"
 
                         waveform = slice.get_waveform(channel_dev)
+                        max_compiled_waveform_length = max(
+                            start_from + waveform.width,
+                            max_compiled_waveform_length
+                        )
 
                         if channel_dev in AWG_compiled_waveforms:
-                            assert AWG_compiled_waveforms[channel_dev].width <= slice.start_from - trigger_start_from, \
+                            assert AWG_compiled_waveforms[channel_dev].width <= start_from - trigger_start_from, \
                                 f"Waveform overlap detected on AWG channel {channel_name}."
 
-                            if AWG_compiled_waveforms[channel_dev].width < slice.start_from - trigger_start_from:
+                            if AWG_compiled_waveforms[channel_dev].width < start_from - trigger_start_from:
                                 padding_length = \
-                                    slice.start_from - trigger_start_from - AWG_compiled_waveforms[channel_dev].width
+                                    start_from - trigger_start_from - AWG_compiled_waveforms[channel_dev].width
                                 AWG_compiled_waveforms[channel_dev] = \
                                     AWG_compiled_waveforms[channel_dev].concat(Blank(padding_length))
 
@@ -148,7 +170,7 @@ class Sequence:
                             AWG_compiled_waveforms[channel_dev] = AWG_compiled_waveforms[channel_dev].concat(waveform)
 
                         else:
-                            if slice.start_from - trigger_start_from > 0:
+                            if start_from - trigger_start_from > 0:
                                 AWG_compiled_waveforms[channel_dev] = \
                                     Blank(slice.start_from - trigger_start_from).concat(waveform)
                             else:
@@ -258,7 +280,7 @@ class Sequence:
             i += 1
 
         slice_overlap_counts = {}
-        for slice in self.slices.values():
+        for slice in self.slices:
             slice_overlap_count = 0
             for slice_to_dodge in slice_overlap_counts.keys():
                 if not slice_to_dodge.start_from > slice.start_from + slice.duration or \
@@ -269,7 +291,7 @@ class Sequence:
         i = 0
         height += 1.5
         max_height = height + (1 + max(slice_overlap_counts.values()))
-        for slice in self.slices.values():
+        for slice in self.slices:
             region_x = [ slice.start_from * 1e6, slice.start_from * 1e6,
                          slice.start_from  * 1e6 + slice.duration * 1e6, slice.start_from * 1e6 + slice.duration * 1e6]
             region_y = [ 0, height,

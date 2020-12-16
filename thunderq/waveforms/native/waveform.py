@@ -61,7 +61,7 @@ class Waveform:
 
     def thumbnail_sample(self, sample_points):
         # Used for generating sequence plot
-        return np.array([ self.at(time) for time in sample_points])
+        return np.array([self.at(time) for time in sample_points])
 
     def plot(self, sample_rate):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
