@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
-from thunderq.sequence import Sequence, PaddingPosition
+from thunderq.sequence import Sequence, Slice, PaddingPosition
 from utils import init_runtime, init_sequence, init_flex_sequence
 
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg2, mock_awg4, mock_dg)
@@ -24,7 +24,7 @@ class TestSequence:
     def test_slice_padding_before(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
         waveform = DC(0.1e-6, 1)
 
         slice0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEFORE)
@@ -46,7 +46,7 @@ class TestSequence:
     def test_slice_padding_after(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
         waveform = DC(0.1e-6, 1)
 
         slice0.set_waveform_padding(mock_awg0, PaddingPosition.PADDING_BEHIND)
@@ -68,7 +68,7 @@ class TestSequence:
     def test_sequence_stack(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
         waveform1 = DC(0.1e-6, 1)
         waveform2 = DC(0.1e-6, 2)
         waveform3 = DC(0.1e-6, 3)
@@ -94,7 +94,7 @@ class TestSequence:
     def test_slice_padding_across_multiple_trigger_channels(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
-        assert isinstance(slice2, Sequence.Slice)
+        assert isinstance(slice2, Slice)
         waveform_awg0 = DC(0.1e-6, 1)
         waveform_awg2 = DC(0.1e-6, 1)
         waveform_awg4 = DC(0.1e-6, 1)
@@ -149,7 +149,7 @@ class TestSequence:
     def test_flex_slice_stack(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_flex_sequence(runtime)
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
         waveform1 = DC(0.1e-6, 1)
         waveform2 = DC(0.1e-6, 2)
         waveform3 = DC(0.1e-6, 3)

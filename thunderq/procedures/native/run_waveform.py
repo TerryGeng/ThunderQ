@@ -1,5 +1,5 @@
 from thunderq.waveforms.native.waveform import Waveform
-from thunderq.sequence import Sequence,PaddingPosition
+from thunderq.sequence import Sequence, Slice, PaddingPosition
 from thunderq.procedures.native import Procedure
 from thunderq.runtime import Runtime
 from device_repo import AWG
@@ -10,7 +10,7 @@ class RunWaveform(Procedure):
 
     def __init__(self,
                  runtime: Runtime,
-                 slice: Sequence.Slice,
+                 slice: Slice,
                  channel_dev: AWG,
                  waveform: Waveform,
                  padding_pos=PaddingPosition.PADDING_BEFORE

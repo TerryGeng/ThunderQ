@@ -1,7 +1,7 @@
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
 from thunderq.cycles.native.cycle import Cycle
-from thunderq.sequence import Sequence
+from thunderq.sequence import Sequence, Slice
 from thunderq.procedures.native import Procedure, RunWaveform
 from thunderq.experiment import Sweep1DExperiment
 
@@ -38,7 +38,7 @@ class TestCycle:
     class DummySweepProcedure(Procedure):
         _parameters = ["len", "amp"]
 
-        def __init__(self, slice: Sequence.Slice, dev):
+        def __init__(self, slice: Slice, dev):
             super().__init__("Dummy", "")
             self.slice = slice
             self.dev = dev
@@ -62,7 +62,7 @@ class TestCycle:
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
 
         cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1), (0.1e-6, 2), (0.1e-6, 3)])
@@ -82,7 +82,7 @@ class TestCycle:
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
 
         cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1)])
@@ -98,7 +98,7 @@ class TestCycle:
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
 
         cycle = self.MyTestStackCycle(runtime, slice0, mock_awg0,
                                       [(0.1e-6, 1)])
@@ -112,7 +112,7 @@ class TestCycle:
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_sequence(runtime)
 
-        assert isinstance(slice0, Sequence.Slice)
+        assert isinstance(slice0, Slice)
 
         cycle = self.MyTestSweepCycle(runtime, slice0, mock_awg0)
         cycle.proc.amp = 1
