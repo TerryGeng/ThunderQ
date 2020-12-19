@@ -16,12 +16,12 @@ class Cycle:
         if not self.trigger_initialized:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
-        self.sequence.setup_AWG()
+        self.sequence.setup_channels()
         self.runtime.send_sequence_plot()
-        self.sequence.run_AWG()
+        self.sequence.run_channels()
 
     def stop_sequence(self):
-        self.sequence.stop_AWG()
+        self.sequence.stop_channels()
 
     def add_procedure(self, procedure: Procedure):
         self.procedures.append(procedure)
