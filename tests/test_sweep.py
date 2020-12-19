@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, PropertyMock, patch, call
 import numpy as np
 
 from thunderq.cycles.native import Cycle
-from utils import init_runtime, init_sequence
+from utils import init_runtime, init_fixed_sequence
 
 runtime = init_runtime()
-init_sequence(runtime)
+init_fixed_sequence(runtime)
 
 test_param1 = PropertyMock()
 test_param2 = PropertyMock()

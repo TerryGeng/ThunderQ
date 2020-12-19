@@ -7,7 +7,7 @@ from thunderq.experiment import Sweep1DExperiment
 
 from thunderq.helper.mock_devices import (mock_awg0)
 
-from utils import init_runtime, init_sequence
+from utils import init_runtime, init_fixed_sequence
 
 
 class TestCycle:
@@ -60,7 +60,7 @@ class TestCycle:
 
     def test_stack_procedures(self):
         runtime = init_runtime()
-        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_fixed_sequence(runtime)
 
         assert isinstance(slice0, Slice)
 
@@ -80,7 +80,7 @@ class TestCycle:
 
     def test_procedure_has_update(self):
         runtime = init_runtime()
-        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_fixed_sequence(runtime)
 
         assert isinstance(slice0, Slice)
 
@@ -96,7 +96,7 @@ class TestCycle:
 
     def test_procedure_result_retrieve(self):
         runtime = init_runtime()
-        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_fixed_sequence(runtime)
 
         assert isinstance(slice0, Slice)
 
@@ -110,7 +110,7 @@ class TestCycle:
 
     def test_sweep(self):
         runtime = init_runtime()
-        sequence, slice0, slice1, slice2 = init_sequence(runtime)
+        sequence, slice0, slice1, slice2 = init_fixed_sequence(runtime)
 
         assert isinstance(slice0, Slice)
 

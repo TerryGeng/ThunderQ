@@ -131,10 +131,10 @@ class CarryWave(Waveform):
         super().__init__(max(wave1.width, wave2.width), 1)
         self.wave1 = wave1
         self.wave2 = wave2
-        self.amplitude = 1 # placeholder. THIS SHOULD NOT BE TOUCH. USE OPERATOR *, OR SET IN WAVE1 AND WAVE2.
+        self.amplitude = 1  # placeholder. THIS SHOULD NOT BE TOUCH. USE OPERATOR *, OR SET IN WAVE1 AND WAVE2.
 
     def at(self, time):
-        assert self.amplitude == 1 # I told you not to temper it!
+        assert self.amplitude == 1  # I told you not to temper it!
 
         if not 0 <= time < self.width:
             return 0
