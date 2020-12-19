@@ -67,10 +67,9 @@ class FlexSlice(Slice):
         return max([waveform.width for waveform in self.waveforms.values()])
 
 
-class FixedSlice(Slice):
-    def __init__(self, name, start_from=0, duration=0):
+class FixedLengthSlice(Slice):
+    def __init__(self, name, duration=0):
         super().__init__(name)
-        self.start_from = start_from
         self._duration = duration
         self.waveform_padding_scheme = {}
         self.processed_waveform = {}
@@ -116,6 +115,12 @@ class FixedSlice(Slice):
         del self.processed_waveform[channel]
 
 
+class FixedSlice(FixedLengthSlice):
+    def __init__(self, name, start_from=0, duration=0):
+        super().__init__(name, duration)
+        self.start_from = start_from
+
+
 class Sequence:
     def __init__(self, trigger_device: DG, cycle_frequency):
         self.cycle_frequency = cycle_frequency
@@ -132,11 +137,17 @@ class Sequence:
         return self.triggers[name]
 
     def add_slice(self, slice: Slice):
-        if isinstance(slice, FixedSlice):
-            if slice.start_from + slice.duration > 1 / self.cycle_frequency:
-                raise ValueError(
-                    f"Out of range. Your slice ends at {slice.start_from + slice.duration}s, "
-                    f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
+        if (isinstance(slice, FixedLengthSlice) and
+                slice.duration > 1 / self.cycle_frequency):
+            raise ValueError(
+                f"Out of range. Your slice lasts {slice.duration}s, "
+                f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
+
+        if(isinstance(slice, FixedSlice) and
+                slice.start_from + slice.duration > 1 / self.cycle_frequency):
+            raise ValueError(
+                f"Out of range. Your slice ends at {slice.start_from + slice.duration}s, "
+                f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
 
         self.slices.append(slice)
 
@@ -177,7 +188,6 @@ class Sequence:
 
                 if isinstance(slice, FixedSlice):
                     start_from = slice.start_from
-                # elif isinstance(slice, FlexSlice):
                 else:
                     start_from = max_compiled_waveform_length
 
@@ -204,7 +214,7 @@ class Sequence:
                             compiled_waveforms[channel].concat(
                                 Blank(padding_length))
 
-                    assert (not isinstance(slice, FixedSlice)
+                    assert (not isinstance(slice, FixedLengthSlice)
                             or waveform.width <= slice.duration), \
                         f"Waveform of this slice longer than the total " \
                         f"duration of this slice."
@@ -259,11 +269,13 @@ class Sequence:
         ax.set_xlabel("Time / us")
         text_x = -plot_sample_points[-1]/30
 
-        colors = ["blue", "darkviolet", "crimson", "orangered", "orange", "forestgreen", "lightseagreen", "dodgerblue"]
+        colors = ["blue", "darkviolet", "crimson", "orangered", "orange",
+                  "forestgreen", "lightseagreen", "dodgerblue"]
         height = 0
         i = 0
 
-        trigger_sorted = sorted(self.triggers.values(), key=lambda trigger: trigger.raise_at)
+        trigger_sorted = sorted(self.triggers.values(),
+                                key=lambda trigger: trigger.raise_at)
 
         for trigger in trigger_sorted:
             height += 1.5
@@ -286,8 +298,8 @@ class Sequence:
                         if -0.5 < y.max() < 0.5:
                             y = y + height
                         else:
-                            y = np.ones(len(sample_points)) * 0.5 + height if y.max() > 0 else \
-                                np.ones(len(sample_points)) * 0.5 - height
+                            y = (np.ones(len(sample_points)) * 0.5 + height if y.max() > 0
+                                 else np.ones(len(sample_points)) * 0.5 - height)
 
                     start_at_marker = trigger.raise_at * 1e6
                     end_at_marker = (trigger.raise_at + waveform.width) * 1e6
@@ -352,7 +364,8 @@ class Sequence:
             # draw slice name
             ax.annotate(slice.name,
                         xy=(text_x, text_y),
-                        fontsize=9, ha="center", va="center", bbox=dict(fc='white', ec=(0,0,0,0), boxstyle='square,pad=0')
+                        fontsize=9, ha="center", va="center", bbox=dict(fc='white', ec=(0, 0, 0, 0),
+                                                                        boxstyle='square,pad=0')
             )
             i += 1
 
