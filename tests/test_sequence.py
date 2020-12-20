@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
-from thunderq.sequence import Sequence, FixedLengthSlice, FlexSlice, FixedSlice, PaddingPosition
+from thunderq.sequencer.slices import PaddingPosition, FlexSlice, FixedLengthSlice, FixedSlice
 from utils import init_runtime, init_fixed_sequence, init_flex_sequence, init_nake_sequence
 
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,

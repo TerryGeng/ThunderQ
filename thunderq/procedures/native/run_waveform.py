@@ -1,5 +1,5 @@
 from thunderq.waveforms.native.waveform import Waveform
-from thunderq.sequence import Sequence, Slice, PaddingPosition
+from thunderq.sequencer.slices import PaddingPosition, Slice
 from thunderq.procedures.native import Procedure
 from thunderq.runtime import Runtime
 from device_repo import AWG

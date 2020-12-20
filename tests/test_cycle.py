@@ -1,7 +1,7 @@
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
 from thunderq.cycles.native.cycle import Cycle
-from thunderq.sequence import Sequence, Slice
+from thunderq.sequencer.slices import Slice
 from thunderq.procedures.native import Procedure, RunWaveform
 from thunderq.experiment import Sweep1DExperiment
 

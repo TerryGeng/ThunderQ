@@ -5,8 +5,7 @@ from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,
                                           mock_awg3, mock_awg4, mock_awg5,
                                           mock_awg6, mock_awg7, mock_awg8,
                                           mock_dg)
-from thunderq.sequence import FixedSlice, FlexSlice
-from unittest.mock import MagicMock, PropertyMock, patch, call
+from thunderq.sequencer.slices import FlexSlice, FixedSlice
 
 
 def init_runtime():

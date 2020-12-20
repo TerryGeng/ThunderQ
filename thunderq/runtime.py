@@ -1,7 +1,7 @@
 import threading
 
 from thunderq.config import Config
-from thunderq.sequence import Sequence
+from thunderq.sequencer.sequence import Sequence
 from thunderq.helper.logger import Logger, ExperimentStatus
 
 
