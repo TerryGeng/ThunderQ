@@ -17,7 +17,7 @@ class TestSequence:
         for channel, expected_raise_at, expected_duration in [
             (0, 0, 2e-6), (1, 1e-6, 0), (2, 2e-6, 0)
         ]:
-            raise_at, duration = mock_dg.get_channel_delay(channel)
+            raise_at, duration = mock_dg.device.get_channel_delay(channel)
             assert raise_at == expected_raise_at
             if expected_duration > 0:
                 assert duration == expected_duration
@@ -35,14 +35,14 @@ class TestSequence:
         sequence.setup_channels()
 
         expected_waveform, _ = Blank(3e-6 - 0.1e-6).concat(waveform) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
 
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_slice_padding_after(self):
         runtime = init_runtime()
@@ -57,14 +57,14 @@ class TestSequence:
         sequence.setup_channels()
 
         expected_waveform, _ = waveform.concat(Blank(3e-6 - 0.1e-6)) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
 
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_sequence_stack(self):
         runtime = init_runtime()
@@ -83,14 +83,14 @@ class TestSequence:
 
         expected_waveform, _ = Blank(2.7e-6).concat(waveform1).concat(waveform2) \
             .concat(waveform3) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
 
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_slice_padding_across_multiple_trigger_channels(self):
         runtime = init_runtime()
@@ -108,16 +108,16 @@ class TestSequence:
         sequence.setup_channels()
 
         awg_0_expected_waveform, _ = Blank(2e-6 + 0.9e-6).concat(waveform_awg0) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
         awg_2_expected_waveform, _ = Blank(1e-6 + 0.9e-6).concat(waveform_awg2) \
-            .normalized_sample(mock_awg3.sample_rate)
+            .normalized_sample(mock_awg3.device.sample_rate)
         awg_4_expected_waveform, _ = Blank(0.9e-6).concat(waveform_awg4) \
-            .normalized_sample(mock_awg6.sample_rate)
+            .normalized_sample(mock_awg6.device.sample_rate)
 
         for exp, awg in [
-            (awg_0_expected_waveform, mock_awg0.raw_waveform),
-            (awg_2_expected_waveform, mock_awg3.raw_waveform),
-            (awg_4_expected_waveform, mock_awg6.raw_waveform)
+            (awg_0_expected_waveform, mock_awg0.device.raw_waveform),
+            (awg_2_expected_waveform, mock_awg3.device.raw_waveform),
+            (awg_4_expected_waveform, mock_awg6.device.raw_waveform)
         ]:
             assert isinstance(exp, np.ndarray)
             assert isinstance(awg, np.ndarray)
@@ -139,13 +139,13 @@ class TestSequence:
 
         expected_waveform, _ = Blank(1.9e-6).concat(waveform_slice1) \
             .concat(Blank(0.9e-6)).concat(waveform_slice2) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_flex_slice_stack(self):
         runtime = init_runtime()
@@ -164,14 +164,14 @@ class TestSequence:
 
         expected_waveform, _ = waveform1.concat(waveform2) \
             .concat(waveform3) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
 
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_sub_slice_single_channel(self):
         runtime = init_runtime()
@@ -200,14 +200,14 @@ class TestSequence:
 
         expected_waveform, _ = waveform0.concat(waveform1) \
             .concat(waveform2) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
 
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_sub_slice_overleaf(self):
         runtime = init_runtime()
@@ -243,16 +243,16 @@ class TestSequence:
         print(sequence.last_compiled_waveforms[mock_awg2])
 
         awg_0_expected_waveform, _ = waveform0.concat(Blank(5e-9)).concat(Blank(10e-9))\
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
         awg_1_expected_waveform, _ = Blank(5e-9).concat(waveform1).concat(Blank(10e-9)) \
-            .normalized_sample(mock_awg1.sample_rate)
+            .normalized_sample(mock_awg1.device.sample_rate)
         awg_2_expected_waveform, _ = Blank(5e-9).concat(Blank(5e-9)).concat(waveform2)\
-            .normalized_sample(mock_awg2.sample_rate)
+            .normalized_sample(mock_awg2.device.sample_rate)
 
         for i, (exp, awg) in enumerate([
-            (awg_0_expected_waveform, mock_awg0.raw_waveform),
-            (awg_1_expected_waveform, mock_awg1.raw_waveform),
-            (awg_2_expected_waveform, mock_awg2.raw_waveform)
+            (awg_0_expected_waveform, mock_awg0.device.raw_waveform),
+            (awg_1_expected_waveform, mock_awg1.device.raw_waveform),
+            (awg_2_expected_waveform, mock_awg2.device.raw_waveform)
         ]):
             print(i)
             assert isinstance(exp, np.ndarray)

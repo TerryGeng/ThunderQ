@@ -70,13 +70,13 @@ class TestCycle:
 
         expected_waveform, _ = Blank(2.7e-6).concat(DC(0.1e-6, 1)) \
             .concat(DC(0.1e-6, 2)).concat(DC(0.1e-6, 3)) \
-            .normalized_sample(mock_awg0.sample_rate)
+            .normalized_sample(mock_awg0.device.sample_rate)
 
         assert isinstance(expected_waveform, np.ndarray)
-        assert isinstance(mock_awg0.raw_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
 
-        assert len(expected_waveform) == len(mock_awg0.raw_waveform)
-        assert (mock_awg0.raw_waveform == expected_waveform).all()
+        assert len(expected_waveform) == len(mock_awg0.device.raw_waveform)
+        assert (mock_awg0.device.raw_waveform == expected_waveform).all()
 
     def test_procedure_has_update(self):
         runtime = init_runtime()

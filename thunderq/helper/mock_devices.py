@@ -1,3 +1,4 @@
+from thunderq.sequencer import DGTrigger, AWGChannel
 from device_repo import DeviceType, AWG, DG, Digitizer
 
 
@@ -138,15 +139,15 @@ class MockDigitizer(Digitizer):
         return [[1], [0]]
 
 
-mock_awg0 = MockAWG()
-mock_awg1 = MockAWG()
-mock_awg2 = MockAWG()
-mock_awg3 = MockAWG()
-mock_awg4 = MockAWG()
-mock_awg5 = MockAWG()
-mock_awg6 = MockAWG()
-mock_awg7 = MockAWG()
-mock_awg8 = MockAWG()
-mock_awg9 = MockAWG()
-mock_dg = MockDG()
+mock_awg0 = AWGChannel("mock_awg0", MockAWG())
+mock_awg1 = AWGChannel("mock_awg1", MockAWG())
+mock_awg2 = AWGChannel("mock_awg2", MockAWG())
+mock_awg3 = AWGChannel("mock_awg3", MockAWG())
+mock_awg4 = AWGChannel("mock_awg4", MockAWG())
+mock_awg5 = AWGChannel("mock_awg5", MockAWG())
+mock_awg6 = AWGChannel("mock_awg6", MockAWG())
+mock_awg7 = AWGChannel("mock_awg7", MockAWG())
+mock_awg8 = AWGChannel("mock_awg8", MockAWG())
+mock_awg9 = AWGChannel("mock_awg9", MockAWG())
+mock_dg = DGTrigger(MockDG())
 mock_digitizer = MockDigitizer()

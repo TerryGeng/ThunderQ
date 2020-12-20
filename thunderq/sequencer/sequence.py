@@ -3,15 +3,14 @@ from matplotlib.figure import Figure
 import matplotlib as mpl
 
 from thunderq.sequencer.slices import Slice, FixedLengthSlice, FixedSlice
+from thunderq.sequencer.trigger import Trigger
 from thunderq.waveforms.native import Blank
-
-from device_repo import DG
 
 mpl.rcParams['font.size'] = 9
 mpl.rcParams['lines.linewidth'] = 1.0
 
 
-class Trigger:
+class TriggerSetup:
     def __init__(self, name, trigger_channel, raise_at, drop_after=4e-6, sequence=None):
         self.name = name
         self.trigger_channel = trigger_channel
@@ -28,19 +27,19 @@ class Trigger:
 
 
 class Sequence:
-    def __init__(self, trigger_device: DG, cycle_frequency):
+    def __init__(self, trigger_device: Trigger, cycle_frequency):
         self.cycle_frequency = cycle_frequency
-        self.trigger_device = trigger_device
+        self.trigger = trigger_device
         self.slices = []
-        self.triggers = {}
+        self.trigger_setups = {}
         self.channels = {}
         self.channel_to_trigger = {}
         self.last_compiled_waveforms = {}
         self.channel_update_list = []
 
-    def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> Trigger:
-        self.triggers[name] = Trigger(name, trigger_channel, raise_at, drop_after, self)
-        return self.triggers[name]
+    def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> TriggerSetup:
+        self.trigger_setups[name] = TriggerSetup(name, trigger_channel, raise_at, drop_after, self)
+        return self.trigger_setups[name]
 
     def add_slice(self, slice: Slice):
         if (isinstance(slice, FixedLengthSlice) and
@@ -64,10 +63,10 @@ class Sequence:
         self.setup_channels()
 
     def setup_trigger(self):
-        self.trigger_device.set_cycle_frequency(self.cycle_frequency)
-        for trigger in self.triggers.values():
-            assert isinstance(trigger, Trigger)
-            self.trigger_device.set_channel_delay(
+        self.trigger.set_cycle_frequency(self.cycle_frequency)
+        for trigger in self.trigger_setups.values():
+            assert isinstance(trigger, TriggerSetup)
+            self.trigger.set_channel_delay(
                 trigger.trigger_channel,
                 trigger.raise_at,
                 trigger.drop_after
@@ -146,7 +145,7 @@ class Sequence:
         for channel, waveform in compiled_waveform.items():
             if channel in self.channel_update_list:
                 channel.stop()
-                waveform.write_to_device(channel)
+                channel.write_waveform(waveform)
         self.channel_update_list = []
 
     def stop_channels(self):
@@ -182,7 +181,7 @@ class Sequence:
         height = 0
         i = 0
 
-        trigger_sorted = sorted(self.triggers.values(),
+        trigger_sorted = sorted(self.trigger_setups.values(),
                                 key=lambda trigger: trigger.raise_at)
 
         for trigger in trigger_sorted:

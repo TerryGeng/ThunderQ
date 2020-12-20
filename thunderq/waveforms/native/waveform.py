@@ -12,7 +12,6 @@
 from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
-from device_repo import AWG
 
 from thunderq.helper.iq_calibration_container import IQCalibrationContainer
 
@@ -53,11 +52,6 @@ class Waveform:
             data = data / max_abs  # Normalize
 
         return data, max_abs
-
-    def write_to_device(self, device: AWG):
-        wave_data, amplitude = self.normalized_sample(device.get_sample_rate())
-
-        device.write_raw_waveform(wave_data, amplitude)
 
     def thumbnail_sample(self, sample_points):
         # Used for generating sequence plot
