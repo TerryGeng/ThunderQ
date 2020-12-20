@@ -260,6 +260,50 @@ class TestSequence:
             assert len(exp) == len(awg)
             assert (exp == awg).all()
 
+    def test_sub_slice_waveform_update(self):
+        runtime = init_runtime()
+        sequence = init_nake_sequence(runtime)
+        slice0 = FixedSlice("slice_0", 0, 20e-9)
+        sequence.add_slice(slice0)
+
+        sub_slice0 = FlexSlice("sub_slice0")
+        sub_slice1 = FlexSlice("sub_slice1")
+        sub_slice2 = FlexSlice("sub_slice2")
+
+        slice0.add_sub_slice(sub_slice0)
+        slice0.add_sub_slice(sub_slice1)
+        slice0.add_sub_slice(sub_slice2)
+
+        waveform0 = DC(5e-9, 1)
+        waveform1 = DC(5e-9, 2)
+        waveform2 = DC(10e-9, 3)
+
+        sub_slice0.add_waveform(mock_awg0, waveform0)
+        sub_slice1.add_waveform(mock_awg1, waveform1)
+        sub_slice2.add_waveform(mock_awg2, waveform2)
+
+        sequence.setup_trigger()
+        sequence.setup_channels()
+
+        assert slice0.get_updated_channel() == []
+
+        sub_slice0.clear_waveform(mock_awg0)
+        sub_slice0.add_waveform(mock_awg0, DC(5e-9, 2))
+        # Slice length unchanged, expect that only awg0 need to be updated
+        updated = slice0.get_updated_channel()
+        assert mock_awg0 in updated
+        assert mock_awg1 not in updated
+        assert mock_awg2 not in updated
+
+        waveform1_ = DC(2e-9, 2)
+        sub_slice1.add_waveform(mock_awg1, waveform1_)
+        # Slice length changed, expect that all channels to be updated
+
+        updated = slice0.get_updated_channel()
+        assert mock_awg0 in updated
+        assert mock_awg1 in updated
+        assert mock_awg2 in updated
+
     def test_waveform_overlap_exception(self):
         runtime = init_runtime()
         sequence, slice0, slice1, slice2 = init_fixed_sequence(runtime)

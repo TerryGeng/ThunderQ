@@ -19,34 +19,58 @@ class Slice:
         self._sub_slices_length_history = {}
         self._total_channel_updated = []
         self._compiled = False
+        self._yet_recompute_channel_update = True
 
     @property
     def duration(self):
         raise NotImplementedError
 
+    def need_recompute_updated_channels(self):
+        if self._yet_recompute_channel_update:
+            return True
+
+        for sub_slice in self.sub_slices:
+            if sub_slice.need_recompute_updated_channels():
+                return True
+
+        return False
+
     def get_updated_channel(self):
         # First scan, check which channel needs to be updated
-        if self._total_channel_updated:
+        if not self.need_recompute_updated_channels():
             return self._total_channel_updated
 
         channel_updated = []
         channel_updated.extend(self._channel_updated)
+        already_add_all_channels = False
         for sub_slice in self.sub_slices:
-            if (sub_slice.get_updated_channel() and sub_slice.duration !=
-                    self._sub_slices_length_history[sub_slice]):
+            if sub_slice.duration != self._sub_slices_length_history[sub_slice]:
+                # As long as one flex slice stretched, update all channels
+                self._sub_slices_length_history[sub_slice] = sub_slice.duration
                 self._compiled = False
-                for channel in sub_slice.get_channels():
+                if not already_add_all_channels:
+                    for channel in self.get_channels():
+                        if channel not in channel_updated:
+                            channel_updated.append(channel)
+                    already_add_all_channels = True
+            elif sub_slice.get_updated_channel():
+                self._compiled = False
+                for channel in sub_slice.get_updated_channel():
                     if channel not in channel_updated:
                         channel_updated.append(channel)
 
+        self._total_channel_updated = channel_updated
+        self._yet_recompute_channel_update = False
         return channel_updated
 
     def clear_channel_updated_flag(self):
+        self._yet_recompute_channel_update = True
         self._channel_updated = []
         for sub_slice in self.sub_slices:
-            sub_slice._channel_updated = []
+            sub_slice.clear_channel_updated_flag()
 
     def set_channel_updated_flag(self, channel):
+        self._yet_recompute_channel_update = True
         self._channel_updated.append(channel)
         self._total_channel_updated = []
         self._compiled = False
@@ -117,7 +141,7 @@ class Slice:
             pointer = 0
 
             for sub_slice in self.sub_slices:
-                assert sub_slice not in processed_self_waveforms, \
+                assert channel not in processed_self_waveforms, \
                     f"Waveform for channel {channel} defined in both parent "\
                     "slice and sub slice, causing conflicts."
 
@@ -164,7 +188,10 @@ class FlexSlice(Slice):
 
     @property
     def duration(self):
-        return max([waveform.width for waveform in self.waveforms.values()])
+        max_waveform_len = max([waveform.width for waveform in self.waveforms.values()])
+        max_slice_len = sum([slice.duration for slice in self.sub_slices]) \
+            if self.sub_slices else 0
+        return max(max_slice_len, max_waveform_len)
 
     def add_sub_slice(self, sub_slice):
         assert not isinstance(sub_slice, FixedSlice), \
@@ -191,6 +218,10 @@ class FixedLengthSlice(Slice):
         for channel in self.get_updated_channel():
             waveform_width = self.processed_waveforms[channel].width
             padding_width = self.duration - waveform_width
+
+            assert padding_width > -1e-15, \
+                f"Waveform of this slice longer than the total " \
+                f"duration of this slice."
 
             if padding_width > 1e-15:
                 if (channel not in self.waveform_padding_scheme

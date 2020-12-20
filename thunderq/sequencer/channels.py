@@ -18,6 +18,11 @@ class WaveformChannel:
         raise NotImplementedError
 
 
+class WaveformGate:
+    def __init__(self, name):
+        self.name = name
+
+
 # device_repo AWG support
 class AWGChannel(WaveformChannel):
     from device_repo import AWG

@@ -75,6 +75,7 @@ class Sequence:
     def compile_waveforms(self):
         compiled_waveforms = self.last_compiled_waveforms
         max_compiled_waveform_length = 0
+
         for slice in self.slices:
             channel_updated = slice.get_updated_channel()
             if not channel_updated:
@@ -120,10 +121,6 @@ class Sequence:
                                 compiled_waveforms[channel].concat(
                                     Blank(padding_length))
 
-                    assert (not isinstance(slice, FixedLengthSlice)
-                            or waveform.width <= slice.duration), \
-                        f"Waveform of this slice longer than the total " \
-                        f"duration of this slice."
                     compiled_waveforms[channel] = compiled_waveforms[channel].concat(waveform)
 
                 else:
