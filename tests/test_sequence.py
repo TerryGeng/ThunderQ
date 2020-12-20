@@ -2,10 +2,13 @@ import pytest
 import numpy as np
 from thunderq.waveforms.native import DC, Blank
 from thunderq.sequencer.slices import PaddingPosition, FlexSlice, FixedLengthSlice, FixedSlice
-from utils import init_runtime, init_fixed_sequence, init_flex_sequence, init_nake_sequence
+from utils import init_runtime, init_fixed_sequence, init_flex_sequence, init_nake_sequence, init_gate_sequence
 
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,
-                                          mock_awg3, mock_awg6, mock_dg)
+                                          mock_awg3, mock_awg6, mock_awg10,
+                                          mock_awg11, mock_awg12,
+                                          mock_awg10_gate, mock_awg11_gate,
+                                          mock_awg12_gate, mock_dg)
 
 
 class TestSequence:
@@ -33,6 +36,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = Blank(3e-6 - 0.1e-6).concat(waveform) \
             .normalized_sample(mock_awg0.device.sample_rate)
@@ -55,6 +59,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = waveform.concat(Blank(3e-6 - 0.1e-6)) \
             .normalized_sample(mock_awg0.device.sample_rate)
@@ -80,6 +85,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = Blank(2.7e-6).concat(waveform1).concat(waveform2) \
             .concat(waveform3) \
@@ -106,6 +112,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         awg_0_expected_waveform, _ = Blank(2e-6 + 0.9e-6).concat(waveform_awg0) \
             .normalized_sample(mock_awg0.device.sample_rate)
@@ -136,6 +143,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = Blank(1.9e-6).concat(waveform_slice1) \
             .concat(Blank(0.9e-6)).concat(waveform_slice2) \
@@ -161,6 +169,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = waveform1.concat(waveform2) \
             .concat(waveform3) \
@@ -197,6 +206,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         expected_waveform, _ = waveform0.concat(waveform1) \
             .concat(waveform2) \
@@ -233,6 +243,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         print(slice0.processed_waveforms[mock_awg0])
         print(slice0.processed_waveforms[mock_awg1])
@@ -284,6 +295,7 @@ class TestSequence:
 
         sequence.setup_trigger()
         sequence.setup_channels()
+        sequence.run_channels()
 
         assert slice0.get_updated_channel() == []
 
@@ -318,6 +330,33 @@ class TestSequence:
 
         with pytest.raises(AssertionError):
             sequence.setup_channels()
+
+    def test_waveform_gate(self):
+        runtime = init_runtime()
+        sequence = init_gate_sequence(runtime)
+        slice0 = FixedSlice("slice_0", 0, 5e-9)
+        sequence.add_slice(slice0)
+
+        waveform0 = DC(5e-9, 2)
+        waveform1 = Blank(1e-9).concat(DC(3e-9, 1)).concat(Blank(1e-9))
+
+        slice0.add_waveform(mock_awg10, waveform0)
+        slice0.add_waveform(mock_awg10_gate, waveform1)
+
+        sequence.setup_trigger()
+        sequence.setup_channels()
+        sequence.run_channels()
+
+        expected_waveform, expected_amp = (waveform1 * waveform0) \
+            .normalized_sample(mock_awg0.device.sample_rate)
+
+        assert isinstance(expected_waveform, np.ndarray)
+        assert isinstance(mock_awg0.device.raw_waveform, np.ndarray)
+
+        assert len(expected_waveform) == len(mock_awg10.device.raw_waveform)
+
+        assert expected_amp == mock_awg10.device.raw_waveform_amp
+        assert (mock_awg10.device.raw_waveform == expected_waveform).all()
 
     def test_waveform_before_trigger_exception(self):
         runtime = init_runtime()

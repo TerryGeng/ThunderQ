@@ -1,4 +1,4 @@
-from thunderq.sequencer import DGTrigger, AWGChannel
+from thunderq.sequencer import DGTrigger, AWGChannel, WaveformGate
 from device_repo import DeviceType, AWG, DG, Digitizer
 
 
@@ -149,5 +149,13 @@ mock_awg6 = AWGChannel("mock_awg6", MockAWG())
 mock_awg7 = AWGChannel("mock_awg7", MockAWG())
 mock_awg8 = AWGChannel("mock_awg8", MockAWG())
 mock_awg9 = AWGChannel("mock_awg9", MockAWG())
+
+mock_awg10_gate = WaveformGate("mock_awg10_gate")
+mock_awg11_gate = WaveformGate("mock_awg11_gate")
+mock_awg12_gate = WaveformGate("mock_awg12_gate")
+
+mock_awg10 = AWGChannel("mock_awg10", MockAWG(), mock_awg10_gate)
+mock_awg11 = AWGChannel("mock_awg11", MockAWG(), mock_awg11_gate)
+mock_awg12 = AWGChannel("mock_awg12", MockAWG(), mock_awg12_gate)
 mock_dg = DGTrigger(MockDG())
 mock_digitizer = MockDigitizer()

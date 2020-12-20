@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 import matplotlib as mpl
 
 from thunderq.sequencer.slices import Slice, FixedLengthSlice, FixedSlice
+from thunderq.sequencer.channels import WaveformChannel, WaveformGate
 from thunderq.sequencer.trigger import Trigger
 from thunderq.waveforms.native import Blank
 
@@ -142,7 +143,7 @@ class Sequence:
         for channel, waveform in compiled_waveform.items():
             if channel in self.channel_update_list:
                 channel.stop()
-                channel.write_waveform(waveform)
+                channel.set_waveform(waveform)
         self.channel_update_list = []
 
     def stop_channels(self):
@@ -154,13 +155,21 @@ class Sequence:
         for channel, waveform in self.last_compiled_waveforms.items():
             channel.run()
 
-    def plot(self):
-        plot_sample_rate = 1e6
+    def plot(self, plot_sample_rate=1e6):
         cycle_length = 1 / self.cycle_frequency
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
         plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
 
-        fig = Figure(figsize=(8, len(self.slices) * 1.8))
+        channel_count = len(
+            list(
+                filter(
+                    lambda ch: not isinstance(ch, WaveformGate),
+                    self.channels.values()
+                )
+            )
+        )
+
+        fig = Figure(figsize=(8, (len(self.trigger_setups) + channel_count) * 0.5))
         ax = fig.subplots(1, 1)
 
         fig.set_tight_layout(True)
@@ -184,7 +193,8 @@ class Sequence:
         for trigger in trigger_sorted:
             height += 1.5
             for channel_name, channel in reversed(trigger.linked_waveform_channels):
-                # assert isinstance(channel, AWG)
+                if isinstance(channel, WaveformGate):
+                    continue
 
                 # draw waveforms first
                 y = np.zeros(len(sample_points))
@@ -192,7 +202,7 @@ class Sequence:
                 y = y + channel.get_offset()
 
                 if channel in self.last_compiled_waveforms:
-                    waveform = self.last_compiled_waveforms[channel]
+                    waveform = channel.get_gated_waveform()
                     y = waveform.thumbnail_sample(sample_points - trigger.raise_at)
 
                     if y.max() - y.min() != 0:

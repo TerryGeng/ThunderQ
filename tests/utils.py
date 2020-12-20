@@ -4,6 +4,9 @@ from thunderq.config import Config
 from thunderq.helper.mock_devices import (mock_awg0, mock_awg1, mock_awg2,
                                           mock_awg3, mock_awg4, mock_awg5,
                                           mock_awg6, mock_awg7, mock_awg8,
+                                          mock_awg9, mock_awg10, mock_awg11,
+                                          mock_awg12, mock_awg10_gate,
+                                          mock_awg11_gate, mock_awg12_gate,
                                           mock_dg)
 from thunderq.sequencer.slices import FlexSlice, FixedSlice
 
@@ -59,3 +62,19 @@ def init_flex_sequence(runtime: Runtime):
     sequence.add_slice(slice2)
 
     return sequence, slice0, slice1, slice2
+
+
+def init_gate_sequence(runtime: Runtime):
+    sequence = runtime.create_sequence(mock_dg, 50000)
+    sequence.add_trigger("test_trigger_0", 0, 0, 2e-6) \
+        .link_waveform_channel("awg_0_0", mock_awg0) \
+        .link_waveform_channel("awg_0_1", mock_awg1) \
+        .link_waveform_channel("awg_0_2", mock_awg2) \
+        .link_waveform_channel("awg_0_10", mock_awg10) \
+        .link_waveform_channel("awg_0_11", mock_awg11) \
+        .link_waveform_channel("awg_0_12", mock_awg12) \
+        .link_waveform_channel("awg_0_10_gate", mock_awg10_gate) \
+        .link_waveform_channel("awg_0_11_gate", mock_awg11_gate) \
+        .link_waveform_channel("awg_0_12_gate", mock_awg12_gate)
+
+    return sequence
