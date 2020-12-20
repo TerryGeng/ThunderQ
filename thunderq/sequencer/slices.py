@@ -53,9 +53,11 @@ class Slice:
                         if channel not in channel_updated:
                             channel_updated.append(channel)
                     already_add_all_channels = True
-            elif sub_slice.get_updated_channel():
+                continue
+            sub_updated = sub_slice.get_updated_channel()
+            if sub_updated:
                 self._compiled = False
-                for channel in sub_slice.get_updated_channel():
+                for channel in sub_updated:
                     if channel not in channel_updated:
                         channel_updated.append(channel)
 
