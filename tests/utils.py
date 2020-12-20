@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, PropertyMock, patch, call
 
 def init_runtime():
     config = Config()
-    config.thunderboard_enable = False
+    config.log_output_type = Config.LogOutputType.DISABLED
     runtime = Runtime(config)
     return runtime
 

@@ -61,7 +61,7 @@ class Sweep2DExperiment(SweepExperiment):
             raise TypeError
 
         for result in self.results.keys():
-            if self.runtime.config.thunderboard_enable and self.plot:
+            if not self.runtime.logger.disabled and self.plot:
                 self.result_plot_senders[result] = PlotClient(
                     "Plot: " + result, id="plot_" + result)
                 self.result_plot_senders[f"{result}_2d"] = PlotClient(
@@ -76,7 +76,7 @@ class Sweep2DExperiment(SweepExperiment):
     def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):
         super().post_cycle(cycle_count, cycle_index, params_dict, results_dict)
         self.swept_mask.itemset(cycle_index, 0)
-        if self.runtime.config.thunderboard_enable and self.plot:
+        if not self.runtime.logger.disabled and self.plot:
             threading.Thread(target=self.make_realtime_plot_and_send,
                              args=(cycle_count,),
                              name="Plot Thread").start()

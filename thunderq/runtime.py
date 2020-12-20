@@ -19,22 +19,24 @@ class AttrDict(dict):
 class Runtime:
     def __init__(self, config: Config):
         self.config = config
-        self.logger = Logger(config.thunderboard_enable,
-                             logging_level=config.logging_level)
-        self.exp_status = ExperimentStatus(config.thunderboard_enable)
+        if config.log_output_type == Config.LogOutputType.THUNDERBOARD:
+            self.logger = Logger(True, logging_level=config.logging_level)
+            self.exp_status = ExperimentStatus(True)
+        elif config.log_output_type == Config.LogOutputType.STDOUT:
+            self.logger = Logger(False, logging_level=config.logging_level)
+            self.exp_status = ExperimentStatus(False)
+        else:
+            self.logger = Logger(False, logging_level=config.logging_level,
+                                 disabled=True)
+            self.exp_status = ExperimentStatus(False, False)
+
         self.env = AttrDict()
         self._sequence = None
 
-        self.dry_run = config.dry_run
-        if config.dry_run:
-            self.logger.warning("=== DRY RUN WARNING ===")
-            self.logger.warning("runtime.dry_run is True, means no device will be actually operated.")
-            self.logger.warning("This mode is designed for debugging. If you are actually measuring "
-                                "something, please runtime.dry_run = False and restart the env.")
-
     def update_experiment_status(self, msg):
-        self.exp_status.update_status(msg)
-        self.logger.info("Experiment status updated: " + msg)
+        if self.exp_status:
+            self.exp_status.update_status(msg)
+            self.logger.info("Experiment status updated: " + msg)
 
     def send_sequence_plot(self, force=False, send_async=True):
         if not force and not self.config.show_sequence:

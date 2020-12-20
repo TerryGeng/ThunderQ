@@ -1,17 +1,25 @@
 import time
 import threading
 import numpy as np
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from thunder_board.clients import TextClient, PlotClient
 
 
 class LocalPlotClient:
+    plot_id = 0
+
     def __init__(self, *args, **kwargs):
-        pass
+        self.dummy = plt.figure(self.plot_id)
+        self.manager = self.dummy.canvas.manager
+        self.plot_id += 1
 
     def send(self, fig):
-        pass
+        self.manager.canvas.figure = fig
+        fig.set_canvas(self.manager.canvas)
+        self.manager.canvas.draw()
+        plt.show(block=False)
 
 
 class LocalTextClient:
@@ -25,15 +33,38 @@ class LocalTextClient:
         print(text)
 
 
+class QuietPlotClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def send(self, fig):
+        pass
+
+
+class QuietTextClient:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def send_log(self, text):
+        pass
+
+    def send(self, text):
+        pass
+
+
 class Logger:
     # logging_level: from less verbose to more verbose: ERROR, WARNING, INFO, DEBUG
-    def __init__(self, thunderboard=True, logging_level="INFO"):
+    def __init__(self, thunderboard=True, logging_level="INFO", disabled=False):
         if thunderboard:
             self.log_sender = TextClient("Log", id="log", rotate=True)
-        else:
+        elif not disabled:
             self.log_sender = LocalTextClient()
+        else:
+            self.log_sender = QuietTextClient()
+
         self.plot_senders = {}
         self.thunderboard = thunderboard
+        self.disabled = disabled
 
         self.logging_level = logging_level
         self.enable_timestamp = True
@@ -43,10 +74,12 @@ class Logger:
             if _id not in self.plot_senders:
                 self.plot_senders[_id] = PlotClient(title, id=_id)
             return self.plot_senders[_id]
-        else:
+        elif not self.disabled:
             if _id not in self.plot_senders:
                 self.plot_senders[_id] = LocalPlotClient(title, id=_id)
             return self.plot_senders[_id]
+        else:
+            return QuietPlotClient()
 
     def set_logging_level(self, logging_level):
         assert logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR'], \
@@ -137,7 +170,7 @@ class Logger:
 
 
 class ExperimentStatus:
-    def __init__(self, thunderboard=True):
+    def __init__(self, thunderboard=True, disabled=False):
         if thunderboard:
             self.status_sender = TextClient("Experiment Status", id="status", rotate=False)
             self.sequence_sender = PlotClient("Pulse Sequence", id="pulse sequence")
@@ -147,8 +180,12 @@ class ExperimentStatus:
         self.experiment_stack = []
         self.last_experiment = None
         self.last_experiment_finished_at = None
+        self.disabled = disabled
 
     def experiment_enter(self, experiment_name):
+        if self.disabled:
+            return
+
         _time = time.strftime("%Y-%m-%d %H:%M:%S")
         self.experiment_stack.append({
             'start_at': _time,
@@ -159,12 +196,18 @@ class ExperimentStatus:
         self._send_status()
 
     def update_status(self, status):
+        if self.disabled:
+            return
+
         self.experiment_stack[-1]['status'] = status
         _time = time.strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{_time}] *** Experiment status updated: {status} ***")
         self._send_status()
 
     def experiment_exit(self):
+        if self.disabled:
+            return
+
         popped = self.experiment_stack.pop()
         _time = time.strftime("%Y-%m-%d %H:%M:%S")
         self.last_experiment = popped['name']
