@@ -92,7 +92,10 @@ class Slice:
     def get_waveform(self, channel):
         if not self._compiled:
             self.flatten_waveform()
-        return self.processed_waveforms[channel]
+        if channel in self.processed_waveforms:
+            return self.processed_waveforms[channel]
+        else:
+            return None
 
     def clear_waveform(self, channel):
         self.set_channel_updated_flag(channel)
@@ -136,6 +139,7 @@ class Slice:
         for channel in channel_updated:
             if channel in self.waveforms:
                 processed_self_waveforms[channel] = self.waveforms[channel]
+
 
         processed_sub_waveforms = {}
         # Third scan, updated waveforms stored in sub slices
@@ -218,6 +222,8 @@ class FixedLengthSlice(Slice):
         super().flatten_waveform()
 
         for channel in self.get_updated_channel():
+            if channel not in self.processed_waveforms:
+                continue
             waveform_width = self.processed_waveforms[channel].width
             padding_width = self.duration - waveform_width
 

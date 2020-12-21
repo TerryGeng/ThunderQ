@@ -74,6 +74,7 @@ class Sequence:
             )
 
     def compile_waveforms(self):
+        self.channel_update_list = []
         compiled_waveforms = self.last_compiled_waveforms
         max_compiled_waveform_length = 0
 
@@ -103,6 +104,9 @@ class Sequence:
                     f"(Slice {slice.name}, Channel {channel_name})"
 
                 waveform = slice.get_waveform(channel)
+                if not waveform:
+                    waveform = Blank(0)
+
                 max_compiled_waveform_length = max(
                     start_from + waveform.width,
                     max_compiled_waveform_length
@@ -144,7 +148,6 @@ class Sequence:
             if channel in self.channel_update_list:
                 channel.stop()
                 channel.set_waveform(waveform)
-        self.channel_update_list = []
 
     def stop_channels(self):
         for channel_name, channel in self.channels.items():
@@ -153,7 +156,8 @@ class Sequence:
     def run_channels(self):
         assert self.last_compiled_waveforms, 'Please run setup_channels() first!'
         for channel, waveform in self.last_compiled_waveforms.items():
-            channel.run()
+            if channel in self.channel_update_list:
+                channel.run()
 
     def plot(self, plot_sample_rate=1e6):
         cycle_length = 1 / self.cycle_frequency
