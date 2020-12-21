@@ -71,7 +71,7 @@ class SweepExperiment:
             for procedure in self.cycle.procedures:
                 for param in procedure._parameters:
                     value = getattr(procedure, param)
-                    for alias, _param in procedure._parameter_alias:
+                    for alias, _param in procedure._parameter_alias.items():
                         if param == _param:
                             param = alias
                             break
