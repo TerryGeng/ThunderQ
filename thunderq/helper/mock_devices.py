@@ -1,9 +1,11 @@
 from thunderq.sequencer import DGTrigger, AWGChannel, WaveformGate
+from thunderq.runtime import Logger
 from device_repo import DeviceType, AWG, DG, Digitizer
 
 
 class MockAWG:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.sample_rate = 1e9
         self.offset = 0.0
         self.amplitude = 0.0
@@ -40,6 +42,13 @@ class MockAWG:
 
     def get_amplitude(self):
         return self.amplitude
+
+    def plot_waveform(self, logger: Logger):
+        from matplotlib.figure import Figure
+        fig = Figure(figsize=(8, 4))
+        ax = fig.subplots(1, 1)
+        ax.plot(self.raw_waveform)
+        logger.get_plot_sender(self.name).send(fig)
 
 
 class MockDG:
@@ -139,23 +148,23 @@ class MockDigitizer(Digitizer):
         return [[1], [0]]
 
 
-mock_awg0 = AWGChannel("mock_awg0", MockAWG())
-mock_awg1 = AWGChannel("mock_awg1", MockAWG())
-mock_awg2 = AWGChannel("mock_awg2", MockAWG())
-mock_awg3 = AWGChannel("mock_awg3", MockAWG())
-mock_awg4 = AWGChannel("mock_awg4", MockAWG())
-mock_awg5 = AWGChannel("mock_awg5", MockAWG())
-mock_awg6 = AWGChannel("mock_awg6", MockAWG())
-mock_awg7 = AWGChannel("mock_awg7", MockAWG())
-mock_awg8 = AWGChannel("mock_awg8", MockAWG())
-mock_awg9 = AWGChannel("mock_awg9", MockAWG())
+mock_awg0 = AWGChannel("mock_awg0", MockAWG("mock_awg0"))
+mock_awg1 = AWGChannel("mock_awg1", MockAWG("mock_awg1"))
+mock_awg2 = AWGChannel("mock_awg2", MockAWG("mock_awg2"))
+mock_awg3 = AWGChannel("mock_awg3", MockAWG("mock_awg3"))
+mock_awg4 = AWGChannel("mock_awg4", MockAWG("mock_awg4"))
+mock_awg5 = AWGChannel("mock_awg5", MockAWG("mock_awg5"))
+mock_awg6 = AWGChannel("mock_awg6", MockAWG("mock_awg6"))
+mock_awg7 = AWGChannel("mock_awg7", MockAWG("mock_awg7"))
+mock_awg8 = AWGChannel("mock_awg8", MockAWG("mock_awg8"))
+mock_awg9 = AWGChannel("mock_awg9", MockAWG("mock_awg9"))
 
 mock_awg10_gate = WaveformGate("mock_awg10_gate")
 mock_awg11_gate = WaveformGate("mock_awg11_gate")
 mock_awg12_gate = WaveformGate("mock_awg12_gate")
 
-mock_awg10 = AWGChannel("mock_awg10", MockAWG(), mock_awg10_gate)
-mock_awg11 = AWGChannel("mock_awg11", MockAWG(), mock_awg11_gate)
-mock_awg12 = AWGChannel("mock_awg12", MockAWG(), mock_awg12_gate)
+mock_awg10 = AWGChannel("mock_awg10", MockAWG("mock_awg10"), mock_awg10_gate)
+mock_awg11 = AWGChannel("mock_awg11", MockAWG("mock_awg11"), mock_awg11_gate)
+mock_awg12 = AWGChannel("mock_awg12", MockAWG("mock_awg12"), mock_awg12_gate)
 mock_dg = DGTrigger(MockDG())
 mock_digitizer = MockDigitizer()

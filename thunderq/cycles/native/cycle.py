@@ -2,13 +2,12 @@ from thunderq.procedures.native import Procedure
 
 
 class Cycle:
-    def __init__(self, name, runtime):
+    def __init__(self, name, sequence):
         self.name = name
         self.procedures = []
 
         self.send_status_enable = True
-        self.runtime = runtime
-        self.sequence = self.runtime.sequence
+        self.sequence = sequence
         self.sequence_initialized = False
         self.trigger_initialized = False
 
@@ -17,7 +16,6 @@ class Cycle:
             self.sequence.setup_trigger()
             self.trigger_initialized = True
         self.sequence.setup_channels()
-        self.runtime.send_sequence_plot()
         self.sequence.run_channels()
 
     def stop_sequence(self):

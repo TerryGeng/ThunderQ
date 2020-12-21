@@ -30,7 +30,7 @@ class TestCycle:
 
     class MyTestStackCycle(Cycle):
         def __init__(self, runtime, slice_0, awg_0, amp_len):
-            super().__init__("Test Cycle", runtime)
+            super().__init__("Test Cycle", runtime.sequence)
 
             for len, amp in amp_len:
                 self.add_procedure(RunWaveform(runtime, slice_0, awg_0, DC(len, amp)))
@@ -53,7 +53,7 @@ class TestCycle:
 
     class MyTestSweepCycle(Cycle):
         def __init__(self, runtime, slice_0, awg_0):
-            super().__init__("Test Cycle", runtime)
+            super().__init__("Test Cycle", runtime.sequence)
             self.proc = TestCycle.DummySweepProcedure(slice_0, awg_0)
             self.add_procedure(self.proc)
             self.add_procedure(TestCycle.DummyResultProcedure("prefix_"))

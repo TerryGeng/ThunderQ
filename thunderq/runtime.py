@@ -17,7 +17,9 @@ class AttrDict(dict):
 
 
 class Runtime:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config = None):
+        if not config:
+            config = Config()
         self.config = config
         if config.log_output_type == Config.LogOutputType.THUNDERBOARD:
             self.logger = Logger(True, logging_level=config.logging_level)
@@ -38,17 +40,6 @@ class Runtime:
             self.exp_status.update_status(msg)
             self.logger.info("Experiment status updated: " + msg)
 
-    def send_sequence_plot(self, force=False, send_async=True):
-        if not force and not self.config.show_sequence:
-            return
-
-        sender = self.logger.get_plot_sender("pulse_sequence", "Pulse Sequence")
-
-        if send_async:
-            threading.Thread(target=lambda: sender.send(self.sequence.plot())).start()
-        else:
-            sender.send(self.sequence.plot())
-
     def load_device_to_env(self, name, device):
         self.env[name] = device
 
@@ -60,6 +51,6 @@ class Runtime:
             raise TypeError("Sequence not initialized. Please invoke create_sequence first.")
 
     def create_sequence(self, trigger_dev, cycle_freq):
-        self._sequence = Sequence(trigger_dev, cycle_freq)
+        self._sequence = Sequence(trigger_dev, cycle_freq, self)
         return self._sequence
 

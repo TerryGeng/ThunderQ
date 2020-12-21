@@ -1,8 +1,9 @@
+import threading
 import numpy as np
 from matplotlib.figure import Figure
 import matplotlib as mpl
 
-from thunderq.sequencer.slices import Slice, FixedLengthSlice, FixedSlice
+from thunderq.sequencer.slices import Slice, FixedLengthSlice, FixedSlice, FlexSlice
 from thunderq.sequencer.channels import WaveformChannel, WaveformGate
 from thunderq.sequencer.trigger import Trigger
 from thunderq.waveforms.native import Blank
@@ -28,7 +29,7 @@ class TriggerSetup:
 
 
 class Sequence:
-    def __init__(self, trigger_device: Trigger, cycle_frequency):
+    def __init__(self, trigger_device: Trigger, cycle_frequency, runtime=None):
         self.cycle_frequency = cycle_frequency
         self.trigger = trigger_device
         self.slices = []
@@ -37,6 +38,7 @@ class Sequence:
         self.channel_to_trigger = {}
         self.last_compiled_waveforms = {}
         self.channel_update_list = []
+        self.runtime = runtime
 
     def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> TriggerSetup:
         self.trigger_setups[name] = TriggerSetup(name, trigger_channel, raise_at, drop_after, self)
@@ -148,6 +150,7 @@ class Sequence:
             if channel in self.channel_update_list:
                 channel.stop()
                 channel.set_waveform(waveform)
+        self.send_sequence_plot()
 
     def stop_channels(self):
         for channel_name, channel in self.channels.items():
@@ -158,6 +161,17 @@ class Sequence:
         for channel, waveform in self.last_compiled_waveforms.items():
             if channel in self.channel_update_list:
                 channel.run()
+
+    def send_sequence_plot(self, plot_sample_rate=1e6, force=False, send_async=True):
+        if not force and not self.runtime.config.show_sequence:
+            return
+
+        sender = self.runtime.logger.get_plot_sender("pulse_sequence", "Pulse Sequence")
+
+        if send_async:
+            threading.Thread(target=lambda: sender.send(self.plot(plot_sample_rate))).start()
+        else:
+            sender.send(self.plot(plot_sample_rate))
 
     def plot(self, plot_sample_rate=1e6):
         cycle_length = 1 / self.cycle_frequency
@@ -173,7 +187,7 @@ class Sequence:
             )
         )
 
-        fig = Figure(figsize=(8, (len(self.trigger_setups) + channel_count) * 0.5))
+        fig = Figure(figsize=(8, (len(self.trigger_setups) + channel_count) * 0.5 + 0.5))
         ax = fig.subplots(1, 1)
 
         fig.set_tight_layout(True)
@@ -242,49 +256,70 @@ class Sequence:
                 else:
                     y[t] = height
 
-            ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
+            ax.plot(plot_sample_points, y, color=colors[i % len(colors)])
             ax.annotate(trigger.name, xy=(text_x, height), fontsize=11,
                         ha="right", va="center", fontweight="bold",
                         bbox=dict(fc='white', ec='black', boxstyle='square,pad=0.1'))
             i += 1
 
         slice_overlap_counts = {}
+        slice_real_start = {}
+        max_slice_length = 0
         for slice in self.slices:
             slice_overlap_count = 0
+            if isinstance(slice, FlexSlice) or isinstance(slice, FixedLengthSlice):
+                start_from = max_slice_length
+            else:
+                assert isinstance(slice, FixedSlice)
+                start_from = slice.start_from
+            slice_real_start[slice] = start_from
+
             for slice_to_dodge in slice_overlap_counts.keys():
-                if not slice_to_dodge.start_from > slice.start_from + slice.duration or \
-                        not slice_to_dodge.start_from + slice_to_dodge.duration < slice.start_from:
+                if not (slice_real_start[slice_to_dodge] >= start_from + slice.duration or
+                        slice_real_start[slice_to_dodge] + slice_to_dodge.duration <=
+                        start_from):
                     slice_overlap_count += 1
             slice_overlap_counts[slice] = slice_overlap_count
+
+            max_slice_length += slice.duration
 
         i = 0
         height += 1.5
         max_height = height + (1 + max(slice_overlap_counts.values()))
+        max_slice_length = 0
         for slice in self.slices:
-            region_x = [ slice.start_from * 1e6, slice.start_from * 1e6,
-                         slice.start_from  * 1e6 + slice.duration * 1e6, slice.start_from * 1e6 + slice.duration * 1e6]
-            region_y = [ 0, height,
-                         height, 0 ]
+            if isinstance(slice, FlexSlice) or isinstance(slice, FixedLengthSlice):
+                start_from = max_slice_length
+            else:
+                assert isinstance(slice, FixedSlice)
+                start_from = slice.start_from
+            region_x = [start_from * 1e6, start_from * 1e6,
+                        start_from * 1e6 + slice.duration * 1e6, start_from * 1e6 + slice.duration * 1e6]
+            region_y = [0, height,
+                        height, 0]
 
             ax.fill(region_x, region_y, color=colors[ i % len(colors) ], alpha=0.01)
-            ax.plot([slice.start_from * 1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
-            ax.plot([ (slice.start_from + slice.duration)*1e6 ]*2, [0, max_height], linestyle="--", color="lightgrey")
+            ax.plot([start_from * 1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
+            ax.plot([(start_from + slice.duration)*1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
 
-            text_x = (slice.start_from + slice.duration / 2) * 1e6
+            text_x = (start_from + slice.duration / 2) * 1e6
             text_y = height + (1 + slice_overlap_counts[slice])
             # draw arrow
             ax.annotate(
                 "",
-                xy=(slice.start_from * 1e6, text_y), xycoords="data",
-                xytext=((slice.start_from + slice.duration) * 1e6, text_y), textcoords="data",
+                xy=(start_from * 1e6, text_y), xycoords="data",
+                xytext=((start_from + slice.duration) * 1e6, text_y), textcoords="data",
                 arrowprops=dict(arrowstyle='<|-|>', connectionstyle='arc3')
             )
             # draw slice name
-            ax.annotate(slice.name,
-                        xy=(text_x, text_y),
-                        fontsize=9, ha="center", va="center", bbox=dict(fc='white', ec=(0, 0, 0, 0),
-                                                                        boxstyle='square,pad=0')
+            ax.annotate(
+                slice.name,
+                xy=(text_x, text_y),
+                fontsize=9, ha="center", va="center", bbox=dict(fc='white', ec=(0, 0, 0, 0),
+                                                                boxstyle='square,pad=0')
             )
+
+            max_slice_length += slice.duration
             i += 1
 
         ax.set_ylim(0, max_height + 1)
