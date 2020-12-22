@@ -48,7 +48,8 @@ class MockAWG:
         fig = Figure(figsize=(8, 4))
         ax = fig.subplots(1, 1)
         ax.plot(self.raw_waveform)
-        logger.get_plot_sender(self.name).send(fig)
+        fig.set_tight_layout(True)
+        logger.get_plot_sender(self.name, title=self.name).send(fig)
 
 
 class MockDG:

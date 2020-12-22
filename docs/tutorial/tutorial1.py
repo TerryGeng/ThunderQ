@@ -119,4 +119,8 @@ cycle = TripleSquareWaveCycle(
 # run the entire cycle
 cycle.run()
 
-sequence.send_sequence_plot(plot_sample_rate=1e9)
+# sequence.send_sequence_plot(plot_sample_rate=1e9)
+
+# mock_awg0.device.plot_waveform(runtime.logger)
+# mock_awg1.device.plot_waveform(runtime.logger)
+# mock_awg2.device.plot_waveform(runtime.logger)
