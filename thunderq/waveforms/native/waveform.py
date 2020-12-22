@@ -13,9 +13,6 @@ from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
 
-from thunderq.helper.iq_calibration_container import IQCalibrationContainer
-
-
 class Waveform:
     def __init__(self, width, amplitude):
         self.width = width
@@ -313,14 +310,16 @@ class CalibratedIQ(Waveform):
     # WARNING: This class doesn't deal with channel voltage offset. You should manually set it.
     #          since it should be applied to a channel in the entire time span to compensate the
     #          LO leakage.
-
     def __init__(self,
                  carry_freq,
                  I_waveform: Waveform=None,
                  Q_waveform: Waveform=None,
-                 IQ_cali: IQCalibrationContainer=None,
+                 IQ_cali=None,
                  down_conversion: bool = False  # up conversion: set to True
                  ):
+        from thunderq.helper.iq_calibration_container import IQCalibrationContainer
+        assert isinstance(IQ_cali, IQCalibrationContainer)
+
         super().__init__(0, 1)
 
         self.omega = 2*np.pi*carry_freq
