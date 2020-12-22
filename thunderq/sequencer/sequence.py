@@ -92,6 +92,11 @@ class Sequence:
                 channel_updated = self.channels.values()
                 self._slice_length_history[slice] = slice.duration
 
+            if isinstance(slice, FixedSlice):
+                start_from = slice.start_from
+            else:
+                start_from = max_compiled_waveform_length
+
             for channel_name, channel in self.channels.items():
                 if channel not in channel_updated:
                     continue
@@ -102,11 +107,6 @@ class Sequence:
                         del self.last_compiled_waveforms[channel]
 
                 trigger_start_from = self.channel_to_trigger[channel].raise_at
-
-                if isinstance(slice, FixedSlice):
-                    start_from = slice.start_from
-                else:
-                    start_from = max_compiled_waveform_length
 
                 assert trigger_start_from <= start_from, \
                     f"Waveform assigned to channel before it is triggered! " \

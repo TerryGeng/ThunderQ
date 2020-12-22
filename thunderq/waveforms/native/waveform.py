@@ -197,18 +197,22 @@ class Sequence(Waveform):
             while sample_points[sample_pos] < start_at:
                 result[sample_pos] = 0
                 sample_pos += 1
+            if sample_pos == len(sample_points) - 1:
+                break
 
             if sample_points[sample_pos] < next_start_at:
                 while sample_points[sample_pos] < next_start_at:
                     result[sample_pos] = self.sequence[i].at(sample_points[sample_pos] - start_at)
                     sample_pos += 1
+                    if sample_pos == len(sample_points) - 1:
+                        break
             else:
                 # If some waveforms has width that is less than the resolution of sample_rate:
                 result[sample_pos] = self.sequence[i].at(
                     (start_at + next_start_at) / 2 - start_at)
                 sample_pos += 1
 
-            if sample_pos == len(sample_points):
+            if sample_pos == len(sample_points) - 1:
                 break
 
         return result
