@@ -140,7 +140,6 @@ class Slice:
             if channel in self.waveforms:
                 processed_self_waveforms[channel] = self.waveforms[channel]
 
-
         processed_sub_waveforms = {}
         # Third scan, updated waveforms stored in sub slices
         for channel in channel_updated:

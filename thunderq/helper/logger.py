@@ -103,7 +103,7 @@ class Logger:
 
     def debug(self, msg):
         if self.logging_level == "DEBUG":
-            msg = self._log_stamp("DEBUG") + msg
+            msg = self._log_stamp("DEBUG") + str(msg)
             print(msg)
             self.send_log("<span class='text-muted'>" + msg + "</span>")
 
@@ -112,25 +112,25 @@ class Logger:
 
     def info(self, msg):
         if self.logging_level in ['DEBUG', 'INFO']:
-            msg = self._log_stamp("INFO") + msg
+            msg = self._log_stamp("INFO") + str(msg)
             print(msg)
             self.send_log(msg)
 
     def success(self, msg):
         if self.logging_level in ['DEBUG', 'INFO']:
-            msg = self._log_stamp("INFO") + msg
+            msg = self._log_stamp("INFO") + str(msg)
             print(msg)
             self.send_log("<span class='text-success'>" + msg + "</span>")
 
     def warning(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING']:
-            msg = self._log_stamp("WARNING") + msg
+            msg = self._log_stamp("WARNING") + str(msg)
             print(msg)
             self.send_log("<span class='text-warning'>" + msg + "</span>")
 
     def error(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
-            msg = self._log_stamp("ERROR") + msg
+            msg = self._log_stamp("ERROR") + str(msg)
             print(msg)
             self.send_log("<span class='text-danger'>" + msg + "</span>")
 

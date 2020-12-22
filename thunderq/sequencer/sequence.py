@@ -40,6 +40,8 @@ class Sequence:
         self.channel_update_list = []
         self.runtime = runtime
 
+        self.sequence_plot_sample_rate = 1e6
+
         self._slice_length_history = {}
 
     def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> TriggerSetup:
@@ -157,7 +159,7 @@ class Sequence:
             if channel in self.channel_update_list:
                 channel.stop()
                 channel.set_waveform(waveform)
-        self.send_sequence_plot()
+        self.send_sequence_plot(self.sequence_plot_sample_rate)
 
     def stop_channels(self):
         for channel_name, channel in self.channels.items():
