@@ -40,6 +40,8 @@ class Sequence:
         self.channel_update_list = []
         self.runtime = runtime
 
+        self._slice_length_history = {}
+
     def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> TriggerSetup:
         self.trigger_setups[name] = TriggerSetup(name, trigger_channel, raise_at, drop_after, self)
         return self.trigger_setups[name]
@@ -58,6 +60,7 @@ class Sequence:
                 f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
 
         self.slices.append(slice)
+        self._slice_length_history[slice] = 0
 
         return self
 
@@ -84,6 +87,10 @@ class Sequence:
             channel_updated = slice.get_updated_channel()
             if not channel_updated:
                 continue
+
+            if abs(self._slice_length_history[slice] - slice.duration) > 1e-15:
+                channel_updated = self.channels.values()
+                self._slice_length_history[slice] = slice.duration
 
             for channel_name, channel in self.channels.items():
                 if channel not in channel_updated:
@@ -157,6 +164,11 @@ class Sequence:
             channel.stop()
 
     def run_channels(self):
+        assert self.channels, 'No channel connected to this sequence. Did you' \
+                              'properly set up the trigger and link waveform ' \
+                              'channels to it?'
+        assert self.slices, 'No slice defined in this sequence. Did you add ' \
+                            'slices to this sequence?'
         assert self.last_compiled_waveforms, 'Please run setup_channels() first!'
         for channel, waveform in self.last_compiled_waveforms.items():
             if channel in self.channel_update_list:
