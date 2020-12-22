@@ -1,3 +1,5 @@
+import random
+
 from thunderq.sequencer import DGTrigger, AWGChannel, WaveformGate
 from thunderq.runtime import Logger
 from device_repo import DeviceType, AWG, DG, Digitizer
@@ -149,6 +151,29 @@ class MockDigitizer(Digitizer):
         return [[1], [0]]
 
 
+class MockRandomDigitizer(MockDigitizer):
+    def __init__(self):
+        super().__init__()
+
+    def acquire_and_fetch(self):
+        return [
+            [[random.randrange(0, 10)], [random.randrange(0, 10)]],
+            [[random.randrange(0, 10)], [random.randrange(0, 10)]],
+        ]
+
+    def acquire_and_fetch_average(self):
+        return [[random.randrange(0, 10)], [random.randrange(0, 10)]]
+
+    def fetch(self):
+        return [
+            [[random.randrange(0, 10)], [random.randrange(0, 10)]],
+            [[random.randrange(0, 10)], [random.randrange(0, 10)]],
+        ]
+
+    def fetch_average(self):
+        return [[random.randrange(0, 10)], [random.randrange(0, 10)]]
+
+
 mock_awg0 = AWGChannel("mock_awg0", MockAWG("mock_awg0"))
 mock_awg1 = AWGChannel("mock_awg1", MockAWG("mock_awg1"))
 mock_awg2 = AWGChannel("mock_awg2", MockAWG("mock_awg2"))
@@ -169,3 +194,4 @@ mock_awg11 = AWGChannel("mock_awg11", MockAWG("mock_awg11"), mock_awg11_gate)
 mock_awg12 = AWGChannel("mock_awg12", MockAWG("mock_awg12"), mock_awg12_gate)
 mock_dg = DGTrigger(MockDG())
 mock_digitizer = MockDigitizer()
+mock_random_digitizer = MockRandomDigitizer()

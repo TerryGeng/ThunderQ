@@ -135,9 +135,9 @@ from thunderq.runtime import Runtime
 # the logger, and some configurations, etc.
 runtime = Runtime()
 
-# set the frequency of this DG to be 100000 Hz (10um per cycle)
+# set the frequency of this DG to be 100000 Hz (10us per cycle)
 sequence = runtime.create_sequence(mock_dg, 100000)
-# set the position of the edge of trigger line 0: to raise at 0 and drop after 1um
+# set the position of the edge of trigger line 0: to raise at 0 and drop after 1us
 sequence.add_trigger("test_trigger_0", 0, 0, 1e-6) \
     .link_waveform_channel("channel_0", mock_awg0) \
     .link_waveform_channel("channel_1", mock_awg1) \
