@@ -13,6 +13,7 @@ from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class Waveform:
     def __init__(self, width, amplitude):
         self.width = width
