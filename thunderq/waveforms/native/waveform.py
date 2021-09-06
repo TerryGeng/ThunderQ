@@ -12,6 +12,7 @@
 from textwrap import indent
 import numpy as np
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 
 class Waveform:
@@ -71,19 +72,29 @@ class Waveform:
         return self
 
     def __neg__(self):
-        self.amplitude = self.amplitude * (-1)
-        return self
+        cop = deepcopy(self)
+        cop.amplitude = cop.amplitude * (-1)
+        return cop
+
+    def __add__(self, other):
+        if isinstance(other, Waveform):
+            return SumWave(self, other)
+        else:
+            # return SumWave(self,DC(self.width, other, 0))
+            return self  # do nothing when encountering the case: (wave+other), like(DC(1,1)+1).
 
     def __abs__(self):
-        self.amplitude = abs(self.amplitude)
-        return self
+        cop = deepcopy(self)
+        cop.amplitude = abs(cop.amplitude)
+        return cop
 
     def __mul__(self, other):
         if isinstance(other, Waveform):
             return CarryWave(self, other)
         else:
-            self.amplitude = self.amplitude * other
-        return self
+            cop = deepcopy(self)
+            cop.amplitude = cop.amplitude * other
+        return cop
 
     def __str__(self):
         return f"<Waveform Base Object>"
@@ -94,23 +105,12 @@ class SumWave(Waveform):
         super().__init__(max(wave1.width, wave2.width), 1)
         self.wave1 = wave1
         self.wave2 = wave2
-        self.amplitude = 1 # placeholder. THIS SHOULD NOT BE TOUCH. USE OPERATOR *, OR SET IN WAVE1 AND WAVE2.
 
     def at(self, time):
-        assert self.amplitude == 1 # I told you not to temper it!
-
         if not 0 <= time < self.width:
             return 0
-
-        return self.wave1.at(time) + self.wave2.at(time)
-
-    def __mul__(self, other):
-        if isinstance(other, Waveform):
-            return CarryWave(self, other)
-        else:
-            self.wave1.amplitude = self.wave1.amplitude * other
-            self.wave2.amplitude = self.wave2.amplitude * other
-        return self
+        return (self.wave1.at(time) + self.wave2.at(time)) * self.amplitude
+        # The default value of self.amplitue is 1. In case of (wave1+wave2)*other, it will be set as other.
 
     def __str__(self):
         return f"<SumWave, width: {self.width:e} s>\n" \
@@ -123,22 +123,12 @@ class CarryWave(Waveform):
         super().__init__(max(wave1.width, wave2.width), 1)
         self.wave1 = wave1
         self.wave2 = wave2
-        self.amplitude = 1  # placeholder. THIS SHOULD NOT BE TOUCH. USE OPERATOR *, OR SET IN WAVE1 AND WAVE2.
 
     def at(self, time):
-        assert self.amplitude == 1  # I told you not to temper it!
-
         if not 0 <= time < self.width:
             return 0
-
-        return self.wave1.at(time) * self.wave2.at(time)
-
-    def __mul__(self, other):
-        if isinstance(other, Waveform):
-            return CarryWave(self, other)
-        else:
-            self.wave1.amplitude = self.wave1.amplitude * other
-        return self
+        return (self.wave1.at(time) * self.wave2.at(time)) * self.amplitude
+        # The default value of self.amplitue is 1. In case of (wave1*wave2)*other, it will be set as other.
 
     def __str__(self):
         return f"<CarryWave, width: {self.width:e} s>\n" \
@@ -148,7 +138,7 @@ class CarryWave(Waveform):
 
 class Sequence(Waveform):
     def __init__(self, *argv):
-        super().__init__(0, 0)
+        super().__init__(0, 1)
         self.sequence = []
         self.each_waveform_start_at = None
 
@@ -180,8 +170,8 @@ class Sequence(Waveform):
         for i in range(len(self.each_waveform_start_at) - 1):
             start_at = self.each_waveform_start_at[i]
             if self.each_waveform_start_at[i] <= time < self.each_waveform_start_at[i + 1]:
-                return self.sequence[i].at(time - start_at)
-
+                return self.sequence[i].at(time - start_at) * self.amplitude
+                # The default value of self.amplitue is 1. In case of Sequence*other, it will be set as other.
         return 0
 
     def thumbnail_sample(self, sample_points):
@@ -256,7 +246,7 @@ class ComplexExp(Waveform):
         self.phi = phi
 
     def at(self, time):
-        return self.amplitude * np.cos(self.omega * time + self.phi) + 1j * np.sin(self.omega * time + self.phi)\
+        return self.amplitude * np.cos(self.omega * time + self.phi) + 1j * np.sin(self.omega * time + self.phi) \
             if 0 <= time < self.width else 0
 
     def __str__(self):
@@ -271,9 +261,8 @@ class DC(Waveform):
     def at(self, time):
         if not 0 <= time < self.width:
             return 0
-
         if self.complex_phi != 0:
-            return self.amplitude * np.exp(1j*self.complex_phi)
+            return self.amplitude * np.exp(1j * self.complex_phi)
         else:
             return self.amplitude
 
@@ -293,7 +282,7 @@ class Gaussian(Waveform):
     def __init__(self, width=0, amplitude=1):
         super().__init__(width, amplitude)
 
-        self.sigma = width/(4*np.sqrt(2*np.log(2)))
+        self.sigma = width / (4 * np.sqrt(2 * np.log(2)))
 
     def at(self, time):
         if not 0 <= time < self.width:
@@ -313,8 +302,8 @@ class CalibratedIQ(Waveform):
     #          LO leakage.
     def __init__(self,
                  carry_freq,
-                 I_waveform: Waveform=None,
-                 Q_waveform: Waveform=None,
+                 I_waveform: Waveform = None,
+                 Q_waveform: Waveform = None,
                  IQ_cali=None,
                  down_conversion: bool = False  # up conversion: set to True
                  ):
@@ -323,7 +312,7 @@ class CalibratedIQ(Waveform):
 
         super().__init__(0, 1)
 
-        self.omega = 2*np.pi*carry_freq
+        self.omega = 2 * np.pi * carry_freq
 
         IQ_waveform = None
         if I_waveform is None and Q_waveform:
@@ -333,18 +322,18 @@ class CalibratedIQ(Waveform):
         elif Q_waveform is None and I_waveform is None:
             raise TypeError("At least one of I waveforms and Q waveforms should be given.")
         else:
-            IQ_waveform = SumWave(I_waveform, Q_waveform * 1j)
+            IQ_waveform = I_waveform + (Q_waveform * 1j)
 
         self.width = IQ_waveform.width
         self.amplitude = IQ_waveform.amplitude
 
         if down_conversion:
-            self.carry_IQ = IQ_waveform * SumWave(
-                Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * 1j
+            self.carry_IQ = IQ_waveform * (
+                Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * 1j
             )
         else:
-            self.carry_IQ = IQ_waveform * SumWave(
-                Cos(self.width, 1, self.omega, 0), Sin(self.width, 1, self.omega, 0) * (-1j)
+            self.carry_IQ = IQ_waveform * (
+                Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * (-1j)
             )
 
         self.left_shift_I = 0
@@ -356,11 +345,11 @@ class CalibratedIQ(Waveform):
         self.offset_Q = 0
 
         if IQ_cali and carry_freq:
-            self.scale_I, self.offset_I = IQ_cali.I_amp_factor,  0 #IQ_cali.I_offset
-            self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor,  0 #IQ_cali.Q_offset
+            self.scale_I, self.offset_I = IQ_cali.I_amp_factor, 0  # IQ_cali.I_offset
+            self.scale_Q, self.offset_Q = IQ_cali.Q_amp_factor, 0  # IQ_cali.Q_offset
 
-            _phi_I = IQ_cali.I_phase_shift + IQ_cali.I_time_offset*self.omega
-            _phi_Q = IQ_cali.Q_phase_shift + IQ_cali.Q_time_offset*self.omega
+            _phi_I = IQ_cali.I_phase_shift + IQ_cali.I_time_offset * self.omega
+            _phi_Q = IQ_cali.Q_phase_shift + IQ_cali.Q_time_offset * self.omega
 
             # Calculate phase shift, equivalent to time shift
             self.left_shift_I = IQ_cali.I_phase_shift / self.omega + IQ_cali.I_time_offset
@@ -371,8 +360,8 @@ class CalibratedIQ(Waveform):
         Q_value = self.carry_IQ.at(time + self.left_shift_Q).imag
 
         # Amplitude calibration
-        I_value = I_value * self.scale_I #  + self.offset_I
-        Q_value = Q_value * self.scale_Q #  + self.offset_Q
+        I_value = I_value * self.scale_I  # + self.offset_I
+        Q_value = Q_value * self.scale_Q  # + self.offset_Q
 
         return I_value + 1j * Q_value
 
@@ -386,14 +375,11 @@ class CalibratedIQ(Waveform):
 
 class Real(Waveform):
     def __init__(self, complex_waveform: Waveform):
-        super().__init__(complex_waveform.width, complex_waveform.amplitude)
+        super().__init__(complex_waveform.width, 1)
         self.complex_waveform = complex_waveform
 
     def at(self, time):
-        return self.complex_waveform.at(time).real
-
-    def __mul__(self, other):
-        return self.complex_waveform * other
+        return self.complex_waveform.at(time).real * self.amplitude
 
     def __str__(self):
         return f"<Real of {self.complex_waveform}>"
@@ -401,14 +387,11 @@ class Real(Waveform):
 
 class Imag(Waveform):
     def __init__(self, complex_waveform: Waveform):
-        super().__init__(complex_waveform.width, complex_waveform.amplitude)
+        super().__init__(complex_waveform.width, 1)
         self.complex_waveform = complex_waveform
 
     def at(self, time):
-        return self.complex_waveform.at(time).imag
-
-    def __mul__(self, other):
-        return self.complex_waveform * other
+        return self.complex_waveform.at(time).imag * self.amplitude
 
     def __str__(self):
         return f"<Imag of {self.complex_waveform}>"
