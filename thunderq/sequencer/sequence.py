@@ -85,15 +85,24 @@ class Sequence:
         compiled_waveforms = self.last_compiled_waveforms
         max_compiled_waveform_length = 0
         channel_updated = []
+        channels_involved = []
 
         for slice in self.slices:
+            channels_involved = list(set(channels_involved) | set(slice.waveforms.keys()))
+
+        for slice in self.slices:
+            if abs(self._slice_length_history[slice] - slice.duration) > 1e-15:
+                channel_updated = list(set(channel_updated) | set(channels_involved))
+                self._slice_length_history[slice] = slice.duration
             channel_updated_per_slice = slice.get_updated_channel()
             channel_updated = list(set(channel_updated) | set(channel_updated_per_slice))
-            if abs(self._slice_length_history[slice] - slice.duration) > 1e-15:
-                channel_updated = self.channels.values()
-                self._slice_length_history[slice] = slice.duration
 
         for slice in self.slices:
+            if not slice.waveforms:
+                if slice.get_updated_channel():
+                    pass
+                else:
+                    continue  # when there is noting in slice, pass
             if isinstance(slice, FixedSlice):
                 start_from = slice.start_from
             else:
@@ -107,6 +116,12 @@ class Sequence:
 
                 trigger_start_from = self.channel_to_trigger[channel].raise_at
 
+                channel_name = list(self.channels.keys())[list(self.channels.values()).index(channel)]
+
+                assert trigger_start_from <= start_from, \
+                    f"Waveform assigned to channel before it is triggered!" \
+                    f"(Slice {slice.name}, Channel {channel_name})"
+
                 waveform = slice.get_waveform(channel)
                 if not waveform:
                     if trigger_start_from > start_from:
@@ -115,10 +130,10 @@ class Sequence:
                         waveform = Blank(slice.duration)
 
                 if channel in compiled_waveforms:
-                    assert (compiled_waveforms[channel].width <=
-                            max((start_from - trigger_start_from+1e-15), 0)), \
+                    assert (abs(compiled_waveforms[channel].width) <=
+                            max((start_from - trigger_start_from + 1e-15), 0)), \
                         f"Waveform overlap detected on channel" + \
-                        f"{list(self.channels.keys())[list(self.channels.values()).index(channel)]}."
+                        f"{channel_name}."
 
                     if (compiled_waveforms[channel].width
                             < start_from - trigger_start_from):
