@@ -102,7 +102,7 @@ class Sequence:
                 if slice.get_updated_channel():
                     pass
                 else:
-                    continue  # when there is noting in slice, pass
+                    continue  # when there is nothing in slice, pass
             if isinstance(slice, FixedSlice):
                 start_from = slice.start_from
             else:
@@ -118,7 +118,7 @@ class Sequence:
 
                 channel_name = list(self.channels.keys())[list(self.channels.values()).index(channel)]
 
-                assert trigger_start_from <= start_from, \
+                assert (trigger_start_from <= start_from or (channel not in slice.waveforms.keys())), \
                     f"Waveform assigned to channel before it is triggered!" \
                     f"(Slice {slice.name}, Channel {channel_name})"
 
