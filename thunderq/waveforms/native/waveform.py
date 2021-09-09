@@ -308,7 +308,7 @@ class CalibratedIQ(Waveform):
                  down_conversion: bool = False  # up conversion: set to True
                  ):
         from thunderq.helper.iq_calibration_container import IQCalibrationContainer
-        assert isinstance(IQ_cali, IQCalibrationContainer)
+        # assert isinstance(IQ_cali, IQCalibrationContainer)
 
         super().__init__(0, 1)
 

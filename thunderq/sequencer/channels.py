@@ -73,7 +73,6 @@ class AWGChannel(WaveformChannel):
         waveform = self.get_gated_waveform()
         wave_data, amplitude = waveform.normalized_sample(
             self.device.get_sample_rate())
-
         self.device.write_raw_waveform(wave_data, amplitude)
 
         self.device.run()

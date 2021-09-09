@@ -53,13 +53,13 @@ class Sequence:
                 slice.duration > 1 / self.cycle_frequency):
             raise ValueError(
                 f"Out of range. Your slice lasts {slice.duration}s, "
-                f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
+                f"while each trigger cycle ends at {1 / self.cycle_frequency}s.")
 
-        if(isinstance(slice, FixedSlice) and
+        if (isinstance(slice, FixedSlice) and
                 slice.start_from + slice.duration > 1 / self.cycle_frequency):
             raise ValueError(
                 f"Out of range. Your slice ends at {slice.start_from + slice.duration}s, "
-                f"while each trigger cycle ends at {1/self.cycle_frequency}s.")
+                f"while each trigger cycle ends at {1 / self.cycle_frequency}s.")
 
         self.slices.append(slice)
         self._slice_length_history[slice] = 0
@@ -84,25 +84,22 @@ class Sequence:
         self.channel_update_list = []
         compiled_waveforms = self.last_compiled_waveforms
         max_compiled_waveform_length = 0
+        channel_updated = []
 
         for slice in self.slices:
-            channel_updated = slice.get_updated_channel()
-            if not channel_updated:
-                continue
-
+            channel_updated_per_slice = slice.get_updated_channel()
+            channel_updated = list(set(channel_updated) | set(channel_updated_per_slice))
             if abs(self._slice_length_history[slice] - slice.duration) > 1e-15:
                 channel_updated = self.channels.values()
                 self._slice_length_history[slice] = slice.duration
 
+        for slice in self.slices:
             if isinstance(slice, FixedSlice):
                 start_from = slice.start_from
             else:
                 start_from = max_compiled_waveform_length
 
-            for channel_name, channel in self.channels.items():
-                if channel not in channel_updated:
-                    continue
-
+            for channel in channel_updated:
                 if channel not in self.channel_update_list:
                     self.channel_update_list.append(channel)
                     if channel in self.last_compiled_waveforms:
@@ -110,23 +107,18 @@ class Sequence:
 
                 trigger_start_from = self.channel_to_trigger[channel].raise_at
 
-                assert trigger_start_from <= start_from, \
-                    f"Waveform assigned to channel before it is triggered! " \
-                    f"(Slice {slice.name}, Channel {channel_name})"
-
                 waveform = slice.get_waveform(channel)
                 if not waveform:
-                    waveform = Blank(0)
-
-                max_compiled_waveform_length = max(
-                    start_from + waveform.width,
-                    max_compiled_waveform_length
-                )
+                    if trigger_start_from > start_from:
+                        waveform = Blank(max(start_from + slice.duration - trigger_start_from, 0))
+                    else:
+                        waveform = Blank(slice.duration)
 
                 if channel in compiled_waveforms:
                     assert (compiled_waveforms[channel].width <=
-                            start_from - trigger_start_from), \
-                        f"Waveform overlap detected on channel {channel_name}."
+                            max((start_from - trigger_start_from+1e-15), 0)), \
+                        f"Waveform overlap detected on channel" + \
+                        f"{list(self.channels.keys())[list(self.channels.values()).index(channel)]}."
 
                     if (compiled_waveforms[channel].width
                             < start_from - trigger_start_from):
@@ -147,6 +139,10 @@ class Sequence:
                     else:
                         compiled_waveforms[channel] = waveform
 
+            max_compiled_waveform_length = max(
+                start_from + slice.duration,
+                max_compiled_waveform_length
+            )
             slice.clear_channel_updated_flag()
 
         self.last_compiled_waveforms = compiled_waveforms
@@ -157,6 +153,7 @@ class Sequence:
         compiled_waveform = self.compile_waveforms()
         for channel, waveform in compiled_waveform.items():
             if channel in self.channel_update_list:
+                print(f"update waveform in {list(self.channels.keys())[list(self.channels.values()).index(channel)]}")
                 channel.stop()
                 channel.set_waveform(waveform)
         self.send_sequence_plot(self.sequence_plot_sample_rate)
@@ -190,7 +187,7 @@ class Sequence:
     def plot(self, plot_sample_rate=1e6):
         cycle_length = 1 / self.cycle_frequency
         sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)
-        plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate)*1e6
+        plot_sample_points = np.arange(0, cycle_length, 1 / plot_sample_rate) * 1e6
 
         channel_count = len(
             list(
@@ -210,9 +207,9 @@ class Sequence:
             ax.spines[spine].set_visible(False)
 
         ax.yaxis.set_visible(False)
-        ax.set_xlim(-plot_sample_points[-1]/6, plot_sample_points[-1])
+        ax.set_xlim(-plot_sample_points[-1] / 6, plot_sample_points[-1])
         ax.set_xlabel("Time / us")
-        text_x = -plot_sample_points[-1]/30
+        text_x = -plot_sample_points[-1] / 30
 
         colors = ["blue", "darkviolet", "crimson", "orangered", "orange",
                   "forestgreen", "lightseagreen", "dodgerblue"]
@@ -254,7 +251,7 @@ class Sequence:
                 else:
                     y = y + height
 
-                ax.plot(plot_sample_points, y, color=colors[ i % len(colors) ])
+                ax.plot(plot_sample_points, y, color=colors[i % len(colors)])
                 ax.plot([plot_sample_points[0], plot_sample_points[-1]], [y_zero_pos, y_zero_pos], color="dimgrey",
                         linestyle="--", linewidth=0.8, alpha=0.7)
 
@@ -302,19 +299,19 @@ class Sequence:
         max_height = height + (1 + max(slice_overlap_counts.values()))
         max_slice_length = 0
         for slice in self.slices:
-            if isinstance(slice, FlexSlice) or isinstance(slice, FixedLengthSlice):
+            if isinstance(slice, FlexSlice):
                 start_from = max_slice_length
             else:
-                assert isinstance(slice, FixedSlice)
+                assert isinstance(slice, FixedSlice) or isinstance(slice, FixedLengthSlice)
                 start_from = slice.start_from
             region_x = [start_from * 1e6, start_from * 1e6,
                         start_from * 1e6 + slice.duration * 1e6, start_from * 1e6 + slice.duration * 1e6]
             region_y = [0, height,
                         height, 0]
 
-            ax.fill(region_x, region_y, color=colors[ i % len(colors) ], alpha=0.01)
-            ax.plot([start_from * 1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
-            ax.plot([(start_from + slice.duration)*1e6]*2, [0, max_height], linestyle="--", color="lightgrey")
+            ax.fill(region_x, region_y, color=colors[i % len(colors)], alpha=0.01)
+            ax.plot([start_from * 1e6] * 2, [0, max_height], linestyle="--", color="lightgrey")
+            ax.plot([(start_from + slice.duration) * 1e6] * 2, [0, max_height], linestyle="--", color="lightgrey")
 
             text_x = (start_from + slice.duration / 2) * 1e6
             text_y = height + (1 + slice_overlap_counts[slice])
@@ -333,10 +330,9 @@ class Sequence:
                                                                 boxstyle='square,pad=0')
             )
 
-            max_slice_length += slice.duration
+            max_slice_length = slice.duration + start_from
             i += 1
 
         ax.set_ylim(0, max_height + 1)
 
         return fig
-
