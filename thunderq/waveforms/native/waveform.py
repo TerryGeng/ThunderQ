@@ -30,24 +30,19 @@ class Waveform:
         if len(sample_points) % min_unit != 0:
             padding_len = min_unit - (len(sample_points) % min_unit)
             padding = [0] * padding_len
-
-        data = np.array([self.at(sample_point) for sample_point in sample_points] + padding)
-
+        data = self.at(sample_points)
+        data = np.concatenate([data, padding])
         return data
 
     def normalized_sample(self, sample_rate, min_unit=1):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
-        padding_len = 0
+        padding = []
         if len(sample_points) % min_unit != 0:
             padding_len = min_unit - (len(sample_points) % min_unit)
-
-        max_abs = 0
-        data = np.zeros(len(sample_points) + padding_len)
-        for i, sample_point in enumerate(sample_points):
-            data[i] = self.at(sample_point)
-            if abs(data[i]) > max_abs:
-                max_abs = abs(data[i])
-
+            padding = [0] * padding_len
+        data = self.at(sample_points)
+        data = np.concatenate([data, padding])
+        max_abs = max(abs(data.max()), abs(data.min()))
         if max_abs != 0:
             data = data / max_abs  # Normalize
 
@@ -55,7 +50,7 @@ class Waveform:
 
     def thumbnail_sample(self, sample_points):
         # Used for generating sequence plot
-        return np.array([self.at(time) for time in sample_points])
+        return self.at(sample_points)
 
     def plot(self, sample_rate):
         sample_points = np.arange(0, self.width, 1.0 / sample_rate)
@@ -108,9 +103,7 @@ class SumWave(Waveform):
         self.wave2 = wave2
 
     def at(self, time):
-        if not 0 <= time < self.width:
-            return 0
-        return (self.wave1.at(time) + self.wave2.at(time)) * self.amplitude
+        return np.where(time > self.width, 0, (self.wave1.at(time) + self.wave2.at(time)) * self.amplitude)
         # The default value of self.amplitue is 1. In case of (wave1+wave2)*other, it will be set as other.
 
     def __str__(self):
@@ -126,9 +119,7 @@ class CarryWave(Waveform):
         self.wave2 = wave2
 
     def at(self, time):
-        if not 0 <= time < self.width:
-            return 0
-        return (self.wave1.at(time) * self.wave2.at(time)) * self.amplitude
+        return np.where(time > self.width, 0, (self.wave1.at(time) * self.wave2.at(time)) * self.amplitude)
         # The default value of self.amplitue is 1. In case of (wave1*wave2)*other, it will be set as other.
 
     def __str__(self):
@@ -164,15 +155,14 @@ class Sequence(Waveform):
     def at(self, time):
         if len(self.sequence) == 0:
             return 0
-
-        if not 0 <= time < self.width:
-            return 0
-
+        condlist = []
+        choicelist = []
         for i in range(len(self.each_waveform_start_at) - 1):
-            start_at = self.each_waveform_start_at[i]
-            if self.each_waveform_start_at[i] <= time < self.each_waveform_start_at[i + 1]:
-                return self.sequence[i].at(time - start_at)
-        return 0
+            condlist.append(
+                np.logical_and(time >= self.each_waveform_start_at[i],
+                               self.each_waveform_start_at[i] + self.sequence[i].width >= time))
+            choicelist.append(self.sequence[i].at(time - self.each_waveform_start_at[i]))
+        return np.select(condlist, choicelist, default=0)
 
     def thumbnail_sample(self, sample_points):
         result = np.zeros(len(sample_points))
@@ -203,7 +193,7 @@ class Sequence(Waveform):
             if sample_pos == len(sample_points) - 1:
                 break
 
-        return result
+        return result  # haven't read this part yet, maybe next time!
 
     def __str__(self):
         _str = f"<Sequence, width: {self.width:e} s>\n"
@@ -220,7 +210,7 @@ class Sin(Waveform):
         self.phi = phi
 
     def at(self, time):
-        return self.amplitude * math.sin(self.omega * time + self.phi) if 0 <= time < self.width else 0
+        return np.where(time > self.width, 0, self.amplitude * np.sin(self.omega * time + self.phi))
 
     def __str__(self):
         return f"<Sin, amplitude:{self.amplitude} V, width: {self.width:e} s>"
@@ -233,7 +223,7 @@ class Cos(Waveform):
         self.phi = phi
 
     def at(self, time):
-        return self.amplitude * math.cos(self.omega * time + self.phi) if 0 <= time < self.width else 0
+        return np.where(time > self.width, 0, self.amplitude * np.cos(self.omega * time + self.phi))
 
     def __str__(self):
         return f"<Cos, amplitude:{self.amplitude} V, width: {self.width:e} s>"
@@ -246,8 +236,9 @@ class ComplexExp(Waveform):
         self.phi = phi
 
     def at(self, time):
-        return self.amplitude * math.cos(self.omega * time + self.phi) + 1j * math.sin(self.omega * time + self.phi) \
-            if 0 <= time < self.width else 0
+        return np.where(time > self.width, 0,
+                        self.amplitude * np.cos(self.omega * time + self.phi) + 1j * np.sin(
+                            self.omega * time + self.phi))
 
     def __str__(self):
         return f"<ComplexExp, amplitude:{self.amplitude} V, width: {self.width:e} s>"
@@ -259,12 +250,19 @@ class DC(Waveform):
         self.complex_phi = complex_phi
 
     def at(self, time):
-        if not 0 <= time < self.width:
-            return 0
-        if self.complex_phi != 0:
-            return self.amplitude * np.exp(1j * self.complex_phi)
-        else:
-            return self.amplitude
+        return np.where(time > self.width, 0, self.amplitude)
+
+    def __str__(self):
+        return f"<DC, offset:{self.amplitude} V, width: {self.width:e} s>"
+
+
+class DC_Complex(Waveform):
+    def __init__(self, width, offset, complex_phi=0):
+        super().__init__(width, offset)
+        self.complex_phi = complex_phi
+
+    def at(self, time):
+        return np.where(time > self.width, 0, self.amplitude * np.exp(1j * self.complex_phi))
 
     def __str__(self):
         return f"<DC, offset:{self.amplitude} V, width: {self.width:e} s>"
@@ -285,10 +283,8 @@ class Gaussian(Waveform):
         self.sigma = width / (4 * np.sqrt(2 * np.log(2)))
 
     def at(self, time):
-        if not 0 <= time < self.width:
-            return 0
-
-        return self.amplitude * np.exp(-0.5 * ((time - 0.5 * self.width) / self.sigma) ** 2)
+        return np.where(time > self.width, 0,
+                        self.amplitude * np.exp(-0.5 * ((time - 0.5 * self.width) / self.sigma) ** 2))
 
     def __str__(self):
         return f"<Gaussian, amplitude:{self.amplitude} V, width: {self.width:e} s>"
