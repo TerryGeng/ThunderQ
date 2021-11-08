@@ -101,14 +101,25 @@ class Sweep2DExperiment(SweepExperiment):
                     param1_name, params1, param1_unit,
                     param2_name, params2, param2_unit,
                     result_name, results, result_unit):
-        contour = ax.contourf(params1, params2, results)
-        cbar = fig.colorbar(contour, ax=ax)
+        # contour = ax.contourf(params1, params2, results)
+        # cbar = fig.colorbar(contour, ax=ax)
+        # cbar.set_label(f"{result_name} / {result_unit}")
+        # ax.set_xlabel(f"{param1_name} / {param1_unit}")
+        # ax.set_ylabel(f"{param2_name} / {param2_unit}")
+        xmin = params1.min()
+        xmax = params1.max()
+        ymin = params2.min()
+        ymax = params2.max()
+        extent = [xmin, xmax, ymin, ymax]
+        imshow = ax.imshow(results, aspect='auto', extent=extent, origin='lower', interpolation='nearest')
+        cbar = fig.colorbar(imshow, ax=ax)
         cbar.set_label(f"{result_name} / {result_unit}")
-        ax.set_xlabel(f"{param1_name} / {param1_unit}")
-        ax.set_ylabel(f"{param2_name} / {param2_unit}")
+        ax.set_xlabel(f"{param1_name} / {param1_unit}", fontsize=20)
+        ax.set_ylabel(f"{param2_name} / {param2_unit}", fontsize=20)
 
     def make_plot_and_save_single_file(self):
-        fig = Figure(figsize=(8, 4 * len(self.results)))
+        # fig = Figure(figsize=(8, 4 * len(self.results)))
+        fig = Figure()
         if len(self.results) - 2 == 1:
             axs = [fig.subplots(1, 1)]
         else:
@@ -138,7 +149,7 @@ class Sweep2DExperiment(SweepExperiment):
     def make_realtime_plot_and_send(self, cycle_count):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
         fast_cycle_length = self.sweep_shape[1]
-        fast_index = cycle_count % fast_cycle_length
+        fast_index = (cycle_count+1) % fast_cycle_length
         fast_cycle_start = cycle_count // fast_cycle_length
 
         for i, (result_name, results) in enumerate(self.results.items()):
@@ -162,12 +173,12 @@ class Sweep2DExperiment(SweepExperiment):
             self.result_plot_senders[result_name].send(fig)
 
         if fast_index == 0:
-            for i, (result_name, results) in enumerate(self.results):
+            for i, (result_name, results) in enumerate(self.results.items()):
                 if result_name == self.fast_scan_param \
                         or result_name == self.slow_scan_param:
                     continue
                 # make 2d plot for both axis
-                fig2d = Figure(figsize=(8, 4))
+                fig2d = Figure(figsize=(8, 6))
                 ax2 = fig2d.subplots(1, 1)
                 self._draw_2d_ax(fig2d, ax2,
                                  self.fast_scan_param,
