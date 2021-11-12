@@ -135,6 +135,8 @@ class Sequence(Waveform):
         self.each_waveform_start_at = None
 
         for arg in argv:
+            if isinstance(arg, Blank):
+                continue
             if isinstance(arg, Sequence):
                 self.sequence.extend(arg.sequence)
             elif isinstance(arg, Waveform):
