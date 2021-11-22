@@ -53,8 +53,8 @@ class Waveform:
         return self.at(sample_points)
 
     def plot(self, sample_rate):
-        sample_points = np.arange(0, self.width, 1.0 / sample_rate)
-        samples = self.direct_sample(sample_rate)
+        sample_points = np.arange(0, self.width, 1 / sample_rate)
+        samples = self.direct_sample(sample_rate, min_unit=1)
         plt.plot(sample_points, samples)
         plt.show()
 
@@ -98,7 +98,7 @@ class Waveform:
 
 class SumWave(Waveform):
     def __init__(self, wave1: Waveform, wave2: Waveform):
-        super().__init__(max(wave1.width, wave2.width), 1)
+        super().__init__(max(wave1.width, wave2.width), amplitude=1)
         self.wave1 = wave1
         self.wave2 = wave2
 
@@ -114,7 +114,7 @@ class SumWave(Waveform):
 
 class CarryWave(Waveform):
     def __init__(self, wave1: Waveform, wave2: Waveform):
-        super().__init__(max(wave1.width, wave2.width), 1)
+        super().__init__(max(wave1.width, wave2.width), amplitude=1)
         self.wave1 = wave1
         self.wave2 = wave2
 
@@ -135,11 +135,11 @@ class Sequence(Waveform):
         self.each_waveform_start_at = None
 
         for arg in argv:
-            if isinstance(arg, Blank):
-                continue
             if isinstance(arg, Sequence):
                 self.sequence.extend(arg.sequence)
             elif isinstance(arg, Waveform):
+                if np.abs(arg.width) < 1e-14:  # skip 0-width wavefrom
+                    continue
                 self.sequence.append(arg)
             else:
                 raise TypeError("Expected Waveform")
@@ -204,6 +204,15 @@ class Sequence(Waveform):
 
         return _str
 
+    def __mul__(self, other):
+        if isinstance(other, Waveform):
+            return CarryWave(self, other)
+        else:
+            cop = deepcopy(self)
+            for wave in cop.sequence:
+                wave.amplitude = wave.amplitude * other
+        return cop
+
 
 class Sin(Waveform):
     def __init__(self, width, amplitude, omega=0, phi=0):
@@ -231,24 +240,9 @@ class Cos(Waveform):
         return f"<Cos, amplitude:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class ComplexExp(Waveform):
-    def __init__(self, width, amplitude, omega=0, phi=0):
-        super().__init__(width, amplitude)
-        self.omega = omega
-        self.phi = phi
-
-    def at(self, time):
-        return np.where(time > self.width, 0,
-                        self.amplitude * np.cos(self.omega * time + self.phi) + 1j * np.sin(
-                            self.omega * time + self.phi))
-
-    def __str__(self):
-        return f"<ComplexExp, amplitude:{self.amplitude} V, width: {self.width:e} s>"
-
-
 class DC(Waveform):
-    def __init__(self, width, offset, complex_phi=0):
-        super().__init__(width, offset)
+    def __init__(self, width, amplitude, complex_phi=0):
+        super().__init__(width, amplitude)
         self.complex_phi = complex_phi
 
     def at(self, time):
@@ -258,16 +252,16 @@ class DC(Waveform):
         return f"<DC, offset:{self.amplitude} V, width: {self.width:e} s>"
 
 
-class DC_Complex(Waveform):
-    def __init__(self, width, offset, complex_phi=0):
-        super().__init__(width, offset)
+class ComplexExp(Waveform):
+    def __init__(self, width, amplitude, complex_phi=0):
+        super().__init__(width, amplitude)
         self.complex_phi = complex_phi
 
     def at(self, time):
         return np.where(time > self.width, 0, self.amplitude * np.exp(1j * self.complex_phi))
 
     def __str__(self):
-        return f"<DC, offset:{self.amplitude} V, width: {self.width:e} s>"
+        return f"<ComplexExp, offset:{self.amplitude} V, width: {self.width:e} s, phase:{self.complex_phi}>"
 
 
 class Blank(DC):
@@ -327,11 +321,11 @@ class CalibratedIQ(Waveform):
 
         if down_conversion:
             self.carry_IQ = IQ_waveform * (
-                Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * 1j
+                    Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * 1j
             )
         else:
             self.carry_IQ = IQ_waveform * (
-                Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * (-1j)
+                    Cos(self.width, 1, self.omega, 0) + Sin(self.width, 1, self.omega, 0) * (-1j)
             )
 
         self.left_shift_I = 0
