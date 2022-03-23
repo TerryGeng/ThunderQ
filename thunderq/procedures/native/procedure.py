@@ -36,3 +36,6 @@ class Procedure:
         # { self.result_prefix + 'key_of_this_data': data_val }
 
         raise NotImplementedError
+
+    def stop_device(self):
+        pass

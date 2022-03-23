@@ -27,6 +27,11 @@ class Cycle:
     def clear_procedures(self):
         self.procedures.clear()
 
+    def stop_device(self):
+        for procedure in self.procedures:
+            assert isinstance(procedure, Procedure)
+            procedure.stop_device()
+
     def run(self):
         for procedure in self.procedures:
             assert isinstance(procedure, Procedure)

@@ -104,7 +104,7 @@ class SumWave(Waveform):
 
     def at(self, time):
         return np.where(time > self.width, 0, (self.wave1.at(time) + self.wave2.at(time)) * self.amplitude)
-        # The default value of self.amplitue is 1. In case of (wave1+wave2)*other, it will be set as other.
+        # The default value of self.amplitude is 1. In case of (wave1+wave2)*other, it will be set as other.
 
     def __str__(self):
         return f"<SumWave, width: {self.width:e} s>\n" \
@@ -120,7 +120,7 @@ class CarryWave(Waveform):
 
     def at(self, time):
         return np.where(time > self.width, 0, (self.wave1.at(time) * self.wave2.at(time)) * self.amplitude)
-        # The default value of self.amplitue is 1. In case of (wave1*wave2)*other, it will be set as other.
+        # The default value of self.amplitude is 1. In case of (wave1*wave2)*other, it will be set as other.
 
     def __str__(self):
         return f"<CarryWave, width: {self.width:e} s>\n" \
@@ -138,7 +138,7 @@ class Sequence(Waveform):
             if isinstance(arg, Sequence):
                 self.sequence.extend(arg.sequence)
             elif isinstance(arg, Waveform):
-                if np.abs(arg.width) < 1e-14:  # skip 0-width wavefrom
+                if np.abs(arg.width) < 1e-14:  # skip 0-width waveform
                     continue
                 self.sequence.append(arg)
             else:

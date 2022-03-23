@@ -168,7 +168,7 @@ class Sequence:
         compiled_waveform = self.compile_waveforms()
         for channel, waveform in compiled_waveform.items():
             if channel in self.channel_update_list:
-                print(f"update waveform in {list(self.channels.keys())[list(self.channels.values()).index(channel)]}")
+                # print(f"update waveform in {list(self.channels.keys())[list(self.channels.values()).index(channel)]}")
                 channel.stop()
                 channel.set_waveform(waveform)
         self.send_sequence_plot(self.sequence_plot_sample_rate)
@@ -183,7 +183,7 @@ class Sequence:
                               'channels to it?'
         assert self.slices, 'No slice defined in this sequence. Did you add ' \
                             'slices to this sequence?'
-        assert self.last_compiled_waveforms, 'Please run setup_channels() first!'
+        # assert self.last_compiled_waveforms, 'Please run setup_channels() first!'
         for channel, waveform in self.last_compiled_waveforms.items():
             if channel in self.channel_update_list:
                 channel.run()

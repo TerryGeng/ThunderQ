@@ -60,9 +60,9 @@ class WaveformGate(WaveformChannel):
 
 # device_repo AWG support
 class AWGChannel(WaveformChannel):
-    from device_repo import AWG
+    # from device_repo import AWG
 
-    def __init__(self, name, channel_dev: AWG, gate_by: WaveformGate = None):
+    def __init__(self, name, channel_dev, gate_by: WaveformGate = None):
         # channel_dev: AWG channel from device_repo
 
         super().__init__(name, gate_by)
