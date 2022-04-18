@@ -357,9 +357,6 @@ class CalibratedIQ(Waveform):
 
         return I_value + 1j * Q_value
 
-    def __mul__(self, other):
-        raise TypeError("It's unwise to adjust the amplitude of a calibrated waveforms.")
-
     def __str__(self):
         return f"<CalibratedIQ, width: {self.width:e} s>\n" \
                f"{indent(str(self.carry_IQ), '  ')}"

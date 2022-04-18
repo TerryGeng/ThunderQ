@@ -54,6 +54,7 @@ class Sweep1DExperiment(SweepExperiment):
             return self.run()
         except KeyboardInterrupt:
             self.post_sweep()
+            self.cycle.stop_device()
             raise KeyboardInterrupt("Experiment terminated by user.")
 
     def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):

@@ -41,7 +41,6 @@ class Sequence:
         self.runtime = runtime
 
         self.sequence_plot_sample_rate = 1e6
-
         self._slice_length_history = {}
 
     def add_trigger(self, name, trigger_channel, raise_at, drop_after=4e-6) -> TriggerSetup:
@@ -169,7 +168,7 @@ class Sequence:
         for channel, waveform in compiled_waveform.items():
             if channel in self.channel_update_list:
                 # print(f"update waveform in {list(self.channels.keys())[list(self.channels.values()).index(channel)]}")
-                channel.stop()
+                channel.clear_waveform()
                 channel.set_waveform(waveform)
         self.send_sequence_plot(self.sequence_plot_sample_rate)
 

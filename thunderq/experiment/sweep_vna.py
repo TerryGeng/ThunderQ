@@ -8,6 +8,10 @@ import time
 from thunderq.experiment import SweepExperiment
 import json
 
+"""
+Ugly, but works
+"""
+
 
 class SweepVNAExperiment(SweepExperiment):
     def __init__(self, runtime, name, cycle, *,

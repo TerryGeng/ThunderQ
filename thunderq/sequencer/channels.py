@@ -32,6 +32,9 @@ class WaveformChannel:
     def stop(self):
         raise NotImplementedError
 
+    def clear_waveform(self):
+        raise NotImplementedError
+
     def set_offset(self, offset):
         raise NotImplementedError
 
@@ -85,4 +88,7 @@ class AWGChannel(WaveformChannel):
 
     def set_offset(self, offset):
         self.device.set_offset(offset)
+
+    def clear_waveform(self):
+        self.device.clear_waveform()
 
