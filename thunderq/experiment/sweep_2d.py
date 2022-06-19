@@ -1,10 +1,10 @@
 import threading
 from typing import Iterable, Union
-
+import json
 import numpy as np
 from matplotlib.figure import Figure
 from thunder_board.clients import PlotClient
-
+import time
 from thunderq.experiment import SweepExperiment
 
 
@@ -81,6 +81,33 @@ class Sweep2DExperiment(SweepExperiment):
                              args=(cycle_count,),
                              name="Plot Thread").start()
 
+    def pre_sweep(self):
+        for parameter_name in self.sweep_points.keys():
+            self.sweep_parameter_getters[parameter_name] = \
+                self.get_attribute_getter(self.cycle, parameter_name)
+            self.sweep_parameter_setters[parameter_name] = \
+                self.get_attribute_setter(self.cycle, parameter_name)
+
+        exp_name = "Sweep " + \
+                   f"{self.slow_scan_param}" \
+                   f"[{self.sweep_points[self.slow_scan_param].min(axis=0).min():.3f}" \
+                   f"_{self.sweep_points[self.slow_scan_param].max(axis=0).max():.3f} " \
+                   f"{self.sweep_parameter_units[self.slow_scan_param]}]"\
+                   f" {self.fast_scan_param}" \
+                   f"[{self.sweep_points[self.fast_scan_param].min(axis=0).min():.3f}" \
+                   f"_{self.sweep_points[self.fast_scan_param].max(axis=0).max():.3f} " \
+                   f"{self.sweep_parameter_units[self.fast_scan_param]}]" \
+
+
+        self.runtime.exp_status.experiment_enter(exp_name)
+
+        if self.save_to_file:
+            timestamp = time.strftime("%m%d_%H%M")
+            self.file_name = f"{self.save_path}{exp_name}_{timestamp}" if self.save_path[-1] == '/' \
+                else f"{self.save_path}/{exp_name}_{timestamp}"
+
+            self.write_param_file()
+
     def post_sweep(self):
         super().post_sweep()
         self.make_plot_and_save_single_file()
@@ -101,14 +128,20 @@ class Sweep2DExperiment(SweepExperiment):
                     param1_name, params1, param1_unit,
                     param2_name, params2, param2_unit,
                     result_name, results, result_unit):
-        contour = ax.contourf(params1, params2, results)
-        cbar = fig.colorbar(contour, ax=ax)
+        xmin = params1.min()
+        xmax = params1.max()
+        ymin = params2.min()
+        ymax = params2.max()
+        extent = [xmin, xmax, ymin, ymax]
+        imshow = ax.imshow(results, aspect='auto', extent=extent, origin='lower', interpolation='nearest')
+        cbar = fig.colorbar(imshow, ax=ax)
         cbar.set_label(f"{result_name} / {result_unit}")
-        ax.set_xlabel(f"{param1_name} / {param1_unit}")
-        ax.set_ylabel(f"{param2_name} / {param2_unit}")
+        ax.set_xlabel(f"{param1_name} / {param1_unit}", fontsize=20)
+        ax.set_ylabel(f"{param2_name} / {param2_unit}", fontsize=20)
 
     def make_plot_and_save_single_file(self):
-        fig = Figure(figsize=(8, 4 * len(self.results)))
+        # fig = Figure(figsize=(8, 4 * len(self.results)))
+        fig = Figure()
         if len(self.results) - 2 == 1:
             axs = [fig.subplots(1, 1)]
         else:
@@ -121,24 +154,26 @@ class Sweep2DExperiment(SweepExperiment):
                 continue
             # make 2d plot for both axis
             self._draw_2d_ax(fig, axs[i],
-                             self.fast_scan_param,
-                             self.sweep_points[self.fast_scan_param],
-                             self.sweep_parameter_units[self.fast_scan_param],
                              self.slow_scan_param,
                              self.sweep_points[self.slow_scan_param],
                              self.sweep_parameter_units[self.slow_scan_param],
+                             self.fast_scan_param,
+                             self.sweep_points[self.fast_scan_param],
+                             self.sweep_parameter_units[self.fast_scan_param],
                              result_name,
-                             np.ma.masked_array(results, mask=self.swept_mask),
+                             np.ma.masked_array(results, mask=self.swept_mask).T,
                              self.result_units[result_name])
             i += 1
 
         fig.set_tight_layout(True)
-        fig.savefig(self.file_name + ".png")
+        if self.save_to_file:
+            fig.savefig(self.file_name + ".png")
+            self.save_json_file()
 
     def make_realtime_plot_and_send(self, cycle_count):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
-        fast_cycle_length = self.sweep_shape[1]
-        fast_index = cycle_count % fast_cycle_length
+        fast_cycle_length = self.sweep_shape[1]  # 获取列数
+        fast_index = (cycle_count+1) % fast_cycle_length
         fast_cycle_start = cycle_count // fast_cycle_length
 
         for i, (result_name, results) in enumerate(self.results.items()):
@@ -162,23 +197,29 @@ class Sweep2DExperiment(SweepExperiment):
             self.result_plot_senders[result_name].send(fig)
 
         if fast_index == 0:
-            for i, (result_name, results) in enumerate(self.results):
+            for i, (result_name, results) in enumerate(self.results.items()):
                 if result_name == self.fast_scan_param \
                         or result_name == self.slow_scan_param:
                     continue
                 # make 2d plot for both axis
-                fig2d = Figure(figsize=(8, 4))
+                fig2d = Figure(figsize=(8, 6))
                 ax2 = fig2d.subplots(1, 1)
                 self._draw_2d_ax(fig2d, ax2,
-                                 self.fast_scan_param,
-                                 self.sweep_points[self.fast_scan_param],
-                                 self.sweep_parameter_units[self.fast_scan_param],
                                  self.slow_scan_param,
                                  self.sweep_points[self.slow_scan_param],
                                  self.sweep_parameter_units[self.slow_scan_param],
+                                 self.fast_scan_param,
+                                 self.sweep_points[self.fast_scan_param],
+                                 self.sweep_parameter_units[self.fast_scan_param],
                                  result_name,
-                                 np.ma.masked_array(results, mask=self.swept_mask),
+                                 np.ma.masked_array(results, mask=self.swept_mask).T,
                                  self.result_units[result_name])
 
                 self.result_plot_senders[f"{result_name}_2d"].send(fig2d)
 
+    def save_json_file(self):
+        results2save = {}
+        for result_name, results in self.results.items():
+            results2save[result_name] = results.tolist()
+        with open(self.file_name + '_results.json', "w") as f:
+            json.dump(results2save, f)

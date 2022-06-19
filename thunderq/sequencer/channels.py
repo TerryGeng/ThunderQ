@@ -32,6 +32,9 @@ class WaveformChannel:
     def stop(self):
         raise NotImplementedError
 
+    def clear_waveform(self):
+        raise NotImplementedError
+
     def set_offset(self, offset):
         raise NotImplementedError
 
@@ -60,9 +63,9 @@ class WaveformGate(WaveformChannel):
 
 # device_repo AWG support
 class AWGChannel(WaveformChannel):
-    from device_repo import AWG
+    # from device_repo import AWG
 
-    def __init__(self, name, channel_dev: AWG, gate_by: WaveformGate = None):
+    def __init__(self, name, channel_dev, gate_by: WaveformGate = None):
         # channel_dev: AWG channel from device_repo
 
         super().__init__(name, gate_by)
@@ -73,7 +76,6 @@ class AWGChannel(WaveformChannel):
         waveform = self.get_gated_waveform()
         wave_data, amplitude = waveform.normalized_sample(
             self.device.get_sample_rate())
-
         self.device.write_raw_waveform(wave_data, amplitude)
 
         self.device.run()
@@ -86,4 +88,7 @@ class AWGChannel(WaveformChannel):
 
     def set_offset(self, offset):
         self.device.set_offset(offset)
+
+    def clear_waveform(self):
+        self.device.clear_waveform()
 

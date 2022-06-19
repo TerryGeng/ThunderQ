@@ -11,9 +11,8 @@ class Trigger:
 
 # device_repo DG support
 class DGTrigger(Trigger):
-    from device_repo import DG
-
-    def __init__(self, trigger_dev: DG):
+    # TODO: trigger_dev:
+    def __init__(self, trigger_dev):
         super().__init__()
         self.device = trigger_dev
 

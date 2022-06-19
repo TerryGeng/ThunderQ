@@ -104,7 +104,7 @@ class Logger:
     def debug(self, msg):
         if self.logging_level == "DEBUG":
             msg = self._log_stamp("DEBUG") + str(msg)
-            print(msg)
+            # print(msg)
             self.send_log("<span class='text-muted'>" + msg + "</span>")
 
     def log(self, msg):
@@ -113,25 +113,25 @@ class Logger:
     def info(self, msg):
         if self.logging_level in ['DEBUG', 'INFO']:
             msg = self._log_stamp("INFO") + str(msg)
-            print(msg)
+            # print(msg)
             self.send_log(msg)
 
     def success(self, msg):
         if self.logging_level in ['DEBUG', 'INFO']:
             msg = self._log_stamp("INFO") + str(msg)
-            print(msg)
+            # print(msg)
             self.send_log("<span class='text-success'>" + msg + "</span>")
 
     def warning(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING']:
             msg = self._log_stamp("WARNING") + str(msg)
-            print(msg)
+            # print(msg)
             self.send_log("<span class='text-warning'>" + msg + "</span>")
 
     def error(self, msg):
         if self.logging_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
             msg = self._log_stamp("ERROR") + str(msg)
-            print(msg)
+            # print(msg)
             self.send_log("<span class='text-danger'>" + msg + "</span>")
 
     def plot_waveform(self, **kwargs):
@@ -192,7 +192,7 @@ class ExperimentStatus:
             'name': experiment_name,
             'status': None
         })
-        print(f"[{_time}] *** Enter experiment: {experiment_name} ***")
+        # print(f"[{_time}] *** Enter experiment: {experiment_name} ***")
         self._send_status()
 
     def update_status(self, status):
@@ -201,7 +201,7 @@ class ExperimentStatus:
 
         self.experiment_stack[-1]['status'] = status
         _time = time.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{_time}] *** Experiment status updated: {status} ***")
+        # print(f"[{_time}] *** Experiment status updated: {status} ***")
         self._send_status()
 
     def experiment_exit(self):
@@ -215,7 +215,7 @@ class ExperimentStatus:
 
         self._send_status()
 
-        print(f"[{_time}] *** Exit experiment: {popped['name']} ***")
+        # print(f"[{_time}] *** Exit experiment: {popped['name']} ***")
 
     def _format_html_status(self):
         html = ""

@@ -1,10 +1,10 @@
 import threading
 from typing import Union, Iterable
-
+import json
 import numpy as np
 from matplotlib.figure import Figure
 from thunder_board.clients import PlotClient
-
+import time
 from thunderq.experiment import SweepExperiment
 
 
@@ -54,6 +54,7 @@ class Sweep1DExperiment(SweepExperiment):
             return self.run()
         except KeyboardInterrupt:
             self.post_sweep()
+            self.cycle.stop_device()
             raise KeyboardInterrupt("Experiment terminated by user.")
 
     def post_cycle(self, cycle_count, cycle_index, params_dict, results_dict):
@@ -62,6 +63,27 @@ class Sweep1DExperiment(SweepExperiment):
             threading.Thread(target=self.make_realtime_plot_and_send,
                              args=(cycle_count,),
                              name="Plot Thread").start()
+
+    def pre_sweep(self):
+        for parameter_name in self.sweep_points.keys():
+            self.sweep_parameter_getters[parameter_name] = \
+                self.get_attribute_getter(self.cycle, parameter_name)
+            self.sweep_parameter_setters[parameter_name] = \
+                self.get_attribute_setter(self.cycle, parameter_name)
+
+        exp_name = "Sweep " + \
+                   f"{self.sweep_parameter}" \
+                   f"[{min(self.sweep_points[self.sweep_parameter]):.3f}" \
+                   f"_{max(self.sweep_points[self.sweep_parameter]):.3f} " \
+                   f"{self.sweep_parameter_units[self.sweep_parameter]}]"
+
+        self.runtime.exp_status.experiment_enter(exp_name)
+
+        if self.save_to_file:
+            timestamp = time.strftime("%m%d_%H%M")
+            self.file_name = f"{self.save_path}{exp_name}_{timestamp}" if self.save_path[-1] == '/' \
+                else f"{self.save_path}/{exp_name}_{timestamp}"
+            self.write_param_file()
 
     def post_sweep(self):
         super().post_sweep()
@@ -103,7 +125,9 @@ class Sweep1DExperiment(SweepExperiment):
             i += 1
 
         fig.set_tight_layout(True)
-        fig.savefig(self.file_name + ".png")
+        if self.save_to_file:
+            fig.savefig(self.file_name + ".png")
+            self.save_json_file()
 
     def make_realtime_plot_and_send(self, cycle_count):
         colors = ["blue", "crimson", "orange", "forestgreen", "dodgerblue"]
@@ -125,3 +149,10 @@ class Sweep1DExperiment(SweepExperiment):
             fig.set_tight_layout(True)
 
             self.result_plot_senders[result_name].send(fig)
+
+    def save_json_file(self):
+        results2save = {}
+        for result_name, results in self.results.items():
+            results2save[result_name] = results.tolist()
+        with open(self.file_name + '_results.json', "w") as f:
+            json.dump(results2save, f)
